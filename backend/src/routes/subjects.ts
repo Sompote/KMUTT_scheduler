@@ -23,7 +23,7 @@ router.get('/', (req: Request, res: Response<ApiResponse<Subject[]>>) => {
       // Get instructors
       const instructors = db.prepare(
         'SELECT instructor_id as id, ratio FROM subject_instructors WHERE subject_id = ?'
-      ).all(subject.id);
+      ).all(subject.id) as Array<{ id: string; ratio: number }>;
       subject.instructors = instructors;
     }
 
@@ -53,7 +53,7 @@ router.get('/:id', (req: Request, res: Response<ApiResponse<Subject>>) => {
     // Get instructors
     const instructors = db.prepare(
       'SELECT instructor_id as id, ratio FROM subject_instructors WHERE subject_id = ?'
-    ).all(subject.id);
+    ).all(subject.id) as Array<{ id: string; ratio: number }>;
     subject.instructors = instructors;
 
     res.json({ success: true, data: subject });
@@ -181,7 +181,7 @@ router.put('/:id', (req: Request<{ id: string }, {}, UpdateSubjectRequest>, res:
 
     const instructors = db.prepare(
       'SELECT instructor_id as id, ratio FROM subject_instructors WHERE subject_id = ?'
-    ).all(id);
+    ).all(id) as Array<{ id: string; ratio: number }>;
     subject.instructors = instructors;
 
     res.json({ success: true, data: subject, message: 'Subject updated successfully' });

@@ -23,7 +23,8 @@ try {
   transaction();
 
   console.log('✅ Database schema initialized successfully!');
-  console.log(`📊 Total tables created: ${db.prepare("SELECT COUNT(*) as count FROM sqlite_master WHERE type='table'").get().count}`);
+  const result = db.prepare("SELECT COUNT(*) as count FROM sqlite_master WHERE type='table'").get() as { count: number };
+  console.log(`📊 Total tables created: ${result.count}`);
 } catch (error) {
   console.error('❌ Error initializing database:', error);
   process.exit(1);
