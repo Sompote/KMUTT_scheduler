@@ -2,7 +2,10 @@
 set -e
 
 # Default backend URL (for local Docker Compose)
-BACKEND_URL=${BACKEND_URL:-"backend:3000"}
+BACKEND_URL=${BACKEND_URL:-"http://backend:3000"}
+
+# Remove trailing slash if present
+BACKEND_URL=${BACKEND_URL%/}
 
 echo "🔧 Configuring backend URL: $BACKEND_URL"
 
