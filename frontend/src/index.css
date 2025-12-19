@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Sarabun', sans-serif;
+  background-color: #F3F4F6;
+  overflow: hidden;
+}
+
+.bg-kmutt-orange {
+  background-color: #F04E23;
+}
+
+.text-kmutt-orange {
+  color: #F04E23;
+}
+
+.border-kmutt-orange {
+  border-color: #F04E23;
+}
+
+.hover-kmutt-orange:hover {
+  background-color: #d63f18;
+}
+
+/* Custom scrollbar */
+.custom-scroll::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CE KMUTT Scheduler v22.0 (Stable & Final)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #F3F4F6; overflow: hidden; }
+        .bg-kmutt-orange { background-color: #F04E23; }
+        .text-kmutt-orange { color: #F04E23; }
+        .border-kmutt-orange { border-color: #F04E23; }
+        .hover-kmutt-orange:hover { background-color: #d63f18; }
+        .nav-btn.active { background-color: #F04E23 !important; color: white !important; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .modal { transition: opacity 0.2s ease-in-out; pointer-events: none; opacity: 0; }
+        .modal.active { pointer-events: auto; opacity: 1; }
+        .form-input { width: 100%; border: 1px solid #D1D5DB; border-radius: 0.375rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; transition: border-color 0.15s; outline: none; }
+        .form-input:focus { border-color: #F04E23; ring: 2px solid #F04E23; }
+        .form-label { display: block; font-size: 0.75rem; font-weight: 700; color: #4B5563; margin-bottom: 0.25rem; text-transform: uppercase; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+        .draggable-item { cursor: grab; user-select: none; transition: all 0.1s; }
+        .draggable-item:active { cursor: grabbing; transform: scale(1.02); }
+        .drop-zone { height: 100%; }
+        .drop-zone:hover { background-color: #EFF6FF; }
+        .calendar-row { display: flex; border-bottom: 1px solid #E5E7EB; min-height: 80px; transition: height 0.2s; }
+        .day-header { width: 80px; flex-shrink: 0; background-color: #F3F4F6; border-right: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6B7280; font-size: 0.85rem; letter-spacing: 0.05em; }
+        .slots-container { flex-grow: 1; position: relative; display: grid; grid-template-columns: repeat(14, 1fr); min-width: 1120px; } 
+        .slot-col { border-right: 1px solid #E5E7EB; height: 100%; }
+        .avail-slot { cursor: pointer; transition: all 0.1s; }
+        .avail-slot:hover { transform: scale(1.1); }
+        .avail-slot.busy { background-color: #EF4444; border-color: #DC2626; opacity: 1; }
+        
+        .dept-hard-bg { background-color: #FEE2E2; opacity: 0.6; pointer-events: none; }
+        .dept-soft-bg { background-color: #FFEDD5; opacity: 0.6; pointer-events: none; }
+        .dept-hard { background-color: #FEE2E2; cursor: pointer; } 
+        .dept-soft { background-color: #FFEDD5; cursor: pointer; } 
+        
+        /* --- UPDATE: Cursor Styles for Setup Lists --- */
+        #list-profs > div,
+        #list-years > div,
+        #list-rooms > div {
+            cursor: pointer; /* Force pointer cursor to indicate interactivity */
+        }
+        
+        .prof-card { border: 1px solid #E5E7EB; border-radius: 0.5rem; padding: 0.5rem; cursor: pointer; transition: all 0.2s; background: white; }
+        .prof-card:hover { border-color: #F04E23; background-color: #FFF7ED; }
+        .prof-card.selected { border-color: #F04E23; background-color: #FFF7ED; box-shadow: 0 2px 4px rgba(240, 78, 35, 0.15); }
+    </style>
+</head>
+<body class="text-gray-800 flex flex-col h-screen">
+
+    <!-- NAVIGATION -->
+    <nav class="bg-gray-900 text-gray-300 shadow-lg z-50 flex-shrink-0">
+        <div class="px-6">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-kmutt-orange rounded-full flex items-center justify-center font-bold text-white text-xl shadow-md border-2 border-white">K</div>
+                    <div>
+                        <div class="text-lg font-bold text-white tracking-wide leading-none">CE KMUTT Scheduler</div>
+                        <div class="text-[10px] text-yellow-400 font-normal">ภาควิชาวิศวกรรมโยธา คณะวิศวกรรมศาสตร์</div>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="app.switchTab('setup')" id="nav-setup" class="nav-btn px-4 py-2 rounded text-sm transition"><i class="fas fa-database mr-2"></i>ข้อมูลพื้นฐาน</button>
+                    <button onclick="app.switchTab('scheduler')" id="nav-scheduler" class="nav-btn px-4 py-2 rounded text-sm transition"><i class="fas fa-calendar-alt mr-2"></i>จัดตารางสอน</button>
+                    <button onclick="app.switchTab('report')" id="nav-report" class="nav-btn px-4 py-2 rounded text-sm transition"><i class="fas fa-file-alt mr-2"></i>รายงาน</button>
+                    <button onclick="app.switchTab('roomreport')" id="nav-roomreport" class="nav-btn px-4 py-2 rounded text-sm transition"><i class="fas fa-door-open mr-2"></i>การใช้ห้อง</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 overflow-hidden relative bg-gray-100 w-full">
+        <div id="toast" class="fixed bottom-5 right-5 px-6 py-4 rounded-lg shadow-xl text-white transform translate-x-full transition-transform duration-300 z-[100] flex items-center gap-3" onclick="app.hideToast()">
+            <span id="toast-icon" class="text-2xl"><i class="fas fa-check-circle"></i></span>
+            <div><h4 id="toast-title" class="font-bold text-sm uppercase">Success</h4><p id="toast-msg" class="text-sm">Operation completed.</p></div>
+        </div>
+
+        <!-- TAB 1: DATA SETUP -->
+        <div id="setup-section" class="section-content h-full p-4 hidden flex flex-col">
+            <div class="max-w-[1920px] mx-auto w-full h-full flex flex-col">
+                <div class="mb-4 border-b pb-2 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">จัดการข้อมูล (Data Management)</h2>
+                        <p class="text-sm text-gray-500">จัดการข้อมูลพื้นฐาน คำนวณภาระงาน และกำหนดทรัพยากร</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-bold text-gray-600">ปีการศึกษา:</label>
+                        <input type="text" id="acad-year" value="2/2568" class="border rounded p-1 text-sm w-24 text-center font-bold text-kmutt-orange" onchange="app.saveAcadYear()">
+                    </div>
+                </div>
+                <div class="flex-1 flex gap-4 overflow-hidden">
+                    <div class="w-1/5 flex flex-col gap-4 overflow-hidden">
+                        <!-- Years -->
+                        <div class="bg-white rounded-lg shadow-sm border p-3 flex flex-col h-1/3 min-h-[250px]">
+                            <div class="flex justify-between items-center mb-2 flex-shrink-0">
+                                <h3 class="font-bold text-blue-800 text-sm md:text-base"><i class="fas fa-user-graduate mr-2"></i> ชั้นปี (Years)</h3>
+                                <button onclick="app.editYear(null)" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 font-bold">+ เพิ่ม</button>
+                            </div>
+                            <div class="flex-1 overflow-y-auto custom-scroll space-y-1 pr-1" id="list-years"></div>
+                        </div>
+                        <!-- Rooms -->
+                        <div class="bg-white rounded-lg shadow-sm border p-3 flex flex-col h-1/3 min-h-[250px]">
+                            <div class="flex justify-between items-center mb-2 flex-shrink-0">
+                                <h3 class="font-bold text-green-800 text-sm md:text-base"><i class="fas fa-door-open mr-2"></i> ห้องเรียน (Rooms)</h3>
+                                <button onclick="app.editRoom(null)" class="text-xs bg-green-50 text-green-600 px-2 py-1 rounded hover:bg-green-100 font-bold">+ เพิ่ม</button>
+                            </div>
+                            <div class="flex-1 overflow-y-auto custom-scroll space-y-1 pr-1" id="list-rooms"></div>
+                        </div>
+                        <!-- Instructors -->
+                        <div class="bg-white rounded-lg shadow-sm border p-3 flex flex-col flex-1 min-h-[300px]">
+                            <div class="flex justify-between items-center mb-2 flex-shrink-0">
+                                <h3 class="font-bold text-purple-800 text-sm md:text-base"><i class="fas fa-chalkboard-teacher mr-2"></i> ผู้สอน (Instructors)</h3>
+                                <button onclick="app.editProf(null)" class="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded hover:bg-purple-100 font-bold">+ เพิ่ม</button>
+                            </div>
+                            <div class="flex-1 overflow-y-auto custom-scroll space-y-1 pr-1" id="list-profs"></div>
+                        </div>
+                    </div>
+                    <!-- Subjects -->
+                    <div class="w-4/5 bg-white rounded-lg shadow-sm border p-4 flex flex-col">
+                        <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                            <h3 class="font-bold text-gray-800 text-lg"><i class="fas fa-book mr-2 text-kmutt-orange"></i> รายวิชา (Subjects)</h3>
+                            <button onclick="app.editSubject(null)" class="bg-kmutt-orange text-white px-4 py-2 rounded shadow hover-kmutt-orange text-sm font-bold"><i class="fas fa-plus mr-1"></i> เพิ่มรายวิชา</button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto custom-scroll relative">
+                            <table class="min-w-full text-sm divide-y divide-gray-200">
+                                <thead class="bg-gray-50 text-gray-600 sticky top-0 z-10 shadow-sm"><tr><th class="px-4 py-3 text-left w-24">รหัส</th><th class="px-4 py-3 text-left w-20">Section</th><th class="px-4 py-3 text-left">ชื่อวิชา</th><th class="px-4 py-3 text-center w-20">หน่วยกิต</th><th class="px-4 py-3 text-center w-24">Workload</th><th class="px-4 py-3 text-left">ผู้สอน (สัดส่วน)</th><th class="px-4 py-3 text-left w-56">ชั้นปี</th><th class="px-4 py-3 text-center w-20">จัดการ</th></tr></thead>
+                                <tbody id="table-subjects" class="divide-y divide-gray-100 bg-white"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: SCHEDULER -->
+        <div id="scheduler-section" class="section-content h-full flex flex-col hidden">
+            <div class="bg-white border-b px-4 py-2 flex justify-between items-center shadow-sm z-20">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-lg font-bold text-gray-800"><i class="fas fa-calendar-alt text-kmutt-orange mr-2"></i> จัดตารางสอน</h2>
+                    <div class="flex items-center gap-2 bg-gray-100 p-1 rounded text-sm"><span class="text-gray-500 font-bold px-2">Filter:</span><select id="view-filter" onchange="app.renderCalendar()" class="bg-transparent font-medium text-gray-700 outline-none cursor-pointer"><option value="ALL">แสดงทั้งหมด</option></select></div>
+                    <div class="flex items-center gap-3 text-xs ml-4"></div>
+                </div>
+                <div class="flex gap-2">
+                     <button onclick="app.openSettings()" class="text-gray-600 hover:bg-gray-100 px-3 py-1 rounded text-xs font-bold border border-gray-300 transition flex items-center"><i class="fas fa-cog mr-1"></i> ตั้งค่า</button>
+                    <button onclick="app.autoAssign()" class="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded text-xs font-bold border border-indigo-200 transition flex items-center"><i class="fas fa-robot mr-1"></i> Auto-Assign</button>
+                    <button onclick="app.resetSchedule()" class="text-red-500 hover:bg-red-50 px-3 py-1 rounded text-xs font-bold border border-red-200 transition flex items-center"><i class="fas fa-trash-alt mr-1"></i> Reset All</button>
+                </div>
+            </div>
+            <div class="flex-1 flex overflow-hidden">
+                <div class="w-72 bg-white border-r flex flex-col shadow-lg z-10 flex-shrink-0">
+                    <div class="p-3 bg-gray-50 border-b flex justify-between items-center"><span class="font-bold text-gray-700 text-sm">Class Pool (รอจัด)</span><span id="pool-count" class="bg-kmutt-orange text-white text-xs font-bold px-2 py-0.5 rounded-full">0</span></div>
+                    <div id="pool-container" class="flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-gray-50/50"></div>
+                </div>
+                <div class="flex-1 overflow-auto custom-scroll bg-white relative"><div id="calendar-grid" class="min-w-[1200px] pb-10"></div></div>
+            </div>
+        </div>
+
+        <!-- TAB 3: REPORT -->
+        <div id="report-section" class="section-content h-full overflow-y-auto p-6 hidden bg-white">
+            <div class="max-w-[280mm] mx-auto space-y-6">
+                <div class="bg-gray-100 p-4 rounded border flex justify-between items-center no-print">
+                    <div><h3 class="font-bold text-gray-700">รายงานภาระงาน (Workload Report)</h3></div>
+                    <div class="flex gap-2"><select id="report-filter" onchange="app.renderReport()" class="border p-2 rounded text-sm min-w-[200px]"></select></div>
+                </div>
+                <div class="text-center border-b-2 border-kmutt-orange pb-4">
+                    <div class="text-xl font-bold text-kmutt-orange">มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าธนบุรี</div>
+                    <div class="text-lg font-bold text-gray-800 mt-1">ภาควิชาวิศวกรรมโยธา คณะวิศวกรรมศาสตร์</div>
+                    <div class="text-md text-gray-600 mt-1">สรุปภาระงานสอนอาจารย์ ภาคการศึกษา <span id="report-acad-year-text">2/2568</span></div>
+                </div>
+                <div id="workload-summary-container" class="space-y-8"></div>
+            </div>
+        </div>
+
+        <!-- TAB 4: ROOM REPORT -->
+        <div id="roomreport-section" class="section-content h-full overflow-y-auto p-6 hidden bg-white">
+            <div class="max-w-[280mm] mx-auto space-y-6">
+                 <div class="bg-gray-100 p-4 rounded border flex justify-between items-center no-print">
+                    <h3 class="font-bold text-gray-700">รายงานการใช้ห้องเรียน (Room Usage)</h3>
+                    <div class="flex gap-2"></div>
+                </div>
+                <div id="room-report-container" class="space-y-8"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="modal-confirm" class="modal fixed inset-0 z-[80] flex items-center justify-center"><div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div><div class="bg-white w-full max-w-sm rounded-xl shadow-2xl z-50 p-6 text-center transform scale-100 transition-all"><div class="text-yellow-500 text-4xl mb-4"><i class="fas fa-exclamation-triangle"></i></div><h3 class="font-bold text-lg text-gray-800 mb-2">ยืนยันการดำเนินการ</h3><p id="confirm-msg" class="text-sm text-gray-500 mb-6"></p><div class="flex justify-center gap-3"><button onclick="app.closeModal('modal-confirm')" class="px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50 font-medium">ยกเลิก</button><button onclick="app.processConfirm()" class="px-6 py-2 bg-kmutt-orange text-white rounded-lg font-bold hover:bg-orange-600 shadow-md">ยืนยัน</button></div></div></div>
+
+    <div id="modal-settings" class="modal fixed inset-0 z-[60] flex items-center justify-center">
+        <div class="absolute inset-0 bg-black bg-opacity-60"></div>
+        <div class="bg-white w-full max-w-5xl rounded-xl shadow-lg z-50 p-6">
+            <h3 class="font-bold text-lg mb-4 text-gray-800 border-b pb-2">ตั้งค่า Department Constraints & Auto-Assign</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label text-red-600 mb-2">ช่วงเวลาที่ไม่สะดวกของภาควิชา (เช่น ประชุม พักเที่ยง)</label>
+                    <p class="text-xs text-gray-500 mb-2">คลิก 1 ครั้ง = <span class="text-red-500 font-bold">แดง</span> (ห้าม), 2 ครั้ง = <span class="text-orange-400 font-bold">ส้ม</span> (เลี่ยง), 3 ครั้ง = ว่าง</p>
+                    <div class="border rounded-lg p-2 bg-gray-50 overflow-x-auto">
+                        <div id="dept-avail-grid" class="min-w-[700px]"></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex gap-4 items-center">
+                        <label class="text-sm font-bold">เวลาทำการปกติ :</label>
+                        <select id="set-start" class="border rounded p-1 text-sm"></select>
+                        <span class="text-sm">ถึง</span>
+                        <select id="set-end" class="border rounded p-1 text-sm"></select>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <label class="text-sm font-bold">เรียนต่อเนื่องสูงสุด (ชม.) :</label>
+                        <input type="number" id="set-max-con" value="4" class="border rounded p-1 w-16 ml-2">
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-blue-50 border border-blue-100 rounded flex items-center gap-3">
+    <input type="checkbox" id="set-check-room" class="w-5 h-5 text-kmutt-orange rounded focus:ring-kmutt-orange" checked>
+    <div>
+        <label for="set-check-room" class="font-bold text-gray-700 cursor-pointer">ตรวจสอบเงื่อนไขห้องเรียน (Room Constraints)</label>
+        <p class="text-xs text-gray-500">หาก <b>ติ๊กออก</b> ระบบจะไม่นำความจุห้องและการใช้ห้องซ้ำมาพิจารณา (ลงห้องเดียวกันซ้อนได้/ห้องเล็กรับคนเยอะได้)</p>
+    </div>
+</div>
+            </div>
+            <div class="mt-6 flex justify-end gap-2"><button onclick="app.saveSettings()" class="px-6 py-2 bg-kmutt-orange text-white rounded font-bold shadow hover:bg-orange-600">บันทึก</button></div>
+        </div>
+    </div>
+
+    <!-- Subject Modal -->
+    <div id="modal-subject" class="modal fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black bg-opacity-60"></div>
+        <div class="bg-white w-full max-w-3xl rounded-xl shadow-2xl z-50 flex flex-col max-h-[95vh]">
+            <div class="bg-white border-b px-6 py-4 flex justify-between items-center"><h3 class="font-bold text-lg text-gray-800">จัดการรายวิชา</h3><button onclick="app.closeModal('modal-subject')" class="text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button></div>
+            <div class="p-6 overflow-y-auto custom-scroll space-y-4 flex-1">
+                <input type="hidden" id="subj-id">
+                <div class="flex gap-4 items-center bg-gray-50 p-2 rounded border mb-2"><label class="flex items-center gap-2 cursor-pointer font-bold text-sm"><input type="checkbox" id="subj-fixed" class="form-checkbox text-red-600" onclick="app.toggleFixedMode()"> วิชา Lock (Fix เวลา/ห้อง/ไม่ต้องใช้ผู้สอนในภาค)</label></div>
+                <div id="fixed-options" class="hidden grid grid-cols-3 gap-4 bg-red-50 p-3 rounded border border-red-100"><div><label class="form-label">วัน</label><select id="fix-day" class="form-input"></select></div><div><label class="form-label">เริ่มเวลา</label><select id="fix-start" class="form-input"></select></div><div><label class="form-label">ห้อง</label><select id="fix-room" class="form-input"></select></div></div>
+                <div class="grid grid-cols-5 gap-4">
+                    <div class="col-span-1"><label class="form-label">รหัสวิชา</label><input id="subj-code" class="form-input" placeholder="CVE101"></div>
+                    <div class="col-span-1"><label class="form-label">Sec</label><input id="subj-sec" class="form-input" placeholder="1"></div>
+                    <div class="col-span-3"><label class="form-label">ชื่อวิชา</label><input id="subj-name" class="form-input" placeholder="Engineering Drawing"></div>
+                </div>
+                <div class="grid grid-cols-3 gap-4 bg-gray-50 p-3 rounded border"><div><label class="form-label">หน่วยกิต</label><input type="number" id="subj-credit" class="form-input" value="3"></div><div><label class="form-label">Workload</label><input type="number" id="subj-workload" class="form-input" value="3"></div><div><label class="form-label text-kmutt-orange">รูปแบบคาบ (เช่น 3, 2, 1)</label><input id="subj-split" class="form-input font-mono" value="3" placeholder="3"></div></div>
+<div>
+    <label class="form-label">ชั้นปี (เลือกได้มากกว่า 1)</label>
+    <div id="subj-year-container" class="border rounded p-2 h-32 overflow-y-auto custom-scroll bg-white grid grid-cols-4 gap-2">
+        </div>
+</div>
+
+                <div><label class="form-label mb-2 flex justify-between"><span>ผู้สอนและสัดส่วนงาน (%)</span><span id="total-ratio" class="text-xs font-bold text-gray-500">Total: 0%</span></label><div class="border rounded-lg overflow-hidden flex flex-col h-48"><div class="bg-gray-100 px-3 py-2 text-xs font-bold text-gray-500 grid grid-cols-12 gap-2"><div class="col-span-1 text-center">เลือก</div><div class="col-span-8">ชื่อ-สกุล</div><div class="col-span-3 text-center">สัดส่วน (%)</div></div><div id="subj-profs-list" class="overflow-y-auto custom-scroll bg-white divide-y flex-1"></div></div></div>
+            </div>
+            <div class="bg-gray-50 px-6 py-4 flex justify-end gap-2 border-t mt-auto"><button onclick="app.deleteSubject()" id="btn-del-subj" class="mr-auto text-red-500 text-sm font-bold hover:underline">ลบวิชา</button><button onclick="app.closeModal('modal-subject')" class="px-4 py-2 border rounded text-gray-600 hover:bg-white bg-white">ยกเลิก</button><button onclick="app.saveSubject()" class="px-6 py-2 bg-kmutt-orange text-white rounded font-bold hover:bg-orange-600 shadow-sm">บันทึก</button></div>
+        </div>
+    </div>
+
+    <!-- Instructor -->
+    <div id="modal-prof" class="modal fixed inset-0 z-50 flex items-center justify-center"><div class="absolute inset-0 bg-black bg-opacity-60"></div><div class="bg-white w-full max-w-6xl rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[90vh]"><div class="bg-purple-50 px-6 py-4 border-b flex justify-between items-center"><h3 class="font-bold text-lg text-purple-900">ข้อมูลผู้สอน</h3><button onclick="app.closeModal('modal-prof')" class="text-purple-300 hover:text-purple-600"><i class="fas fa-times"></i></button></div><div class="flex-1 overflow-y-auto custom-scroll"><div id="prof-form-main" class="p-6 space-y-4"><input type="hidden" id="prof-id"><div class="grid grid-cols-2 gap-4"><div><label class="form-label">คำนำหน้าชื่อ</label><select id="prof-prefix" class="form-input bg-white"><option value="อาจารย์">อาจารย์</option><option value="ดร.">ดร.</option><option value="ผู้ช่วยศาสตราจารย์">ผู้ช่วยศาสตราจารย์</option><option value="รองศาสตราจารย์">รองศาสตราจารย์</option><option value="ศาสตราจารย์">ศาสตราจารย์</option><option value="ผู้ช่วยศาสตราจารย์ ดร.">ผู้ช่วยศาสตราจารย์ ดร.</option><option value="รองศาสตราจารย์ ดร.">รองศาสตราจารย์ ดร.</option><option value="ศาสตราจารย์ ดร.">ศาสตราจารย์ ดร.</option><option value="">อื่นๆ / ไม่ระบุ</option></select></div><div><label class="form-label">สาขาวิชา</label><select id="prof-field" class="form-input bg-white"><option value="">-- ไม่ระบุ --</option><option value="วิศวกรรมโครงสร้าง">วิศวกรรมโครงสร้าง</option><option value="วิศวกรรมทรัพยากรน้ำ">วิศวกรรมทรัพยากรน้ำ</option><option value="วิศวกรรมเทคนิคธรณี">วิศวกรรมเทคนิคธรณี</option><option value="วิศวกรรมขนส่ง">วิศวกรรมขนส่ง</option><option value="วิศวกรรมสำรวจ">วิศวกรรมสำรวจ</option><option value="วิศวกรรมบริหารงานก่อสร้าง">วิศวกรรมบริหารงานก่อสร้าง</option><option value="อาจรย์พิเศษ">วิศวกรรมบริหารงานก่อสร้าง</option></select></div></div><div class="grid grid-cols-2 gap-4"><div><label class="form-label">ชื่อ</label><input id="prof-fname" class="form-input"></div><div><label class="form-label">นามสกุล</label><input id="prof-lname" class="form-input"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="form-label">เบอร์ติดต่อ</label><input id="prof-tel" class="form-input"></div><div><label class="form-label">E-MAIL</label><input id="prof-email" class="form-input"></div></div><div class="pt-4"><div class="flex justify-between items-end mb-2"><label class="form-label text-red-600"><i class="far fa-calendar-times mr-1"></i> ช่วงเวลาที่ไม่สะดวก (Availability)</label><span class="text-xs text-gray-500">สีชมพู เหลือง = Department Lock</span></div><div class="border rounded-lg p-2 bg-gray-50 overflow-x-auto"><div id="avail-grid" class="min-w-[800px]"></div></div></div></div></div><div class="bg-gray-50 px-6 py-4 flex justify-between gap-2 border-t"><button onclick="app.deleteProf()" id="btn-del-prof" class="text-red-500 text-sm font-bold hover:underline">ลบผู้สอน</button><button onclick="app.saveProf()" class="px-6 py-2 bg-purple-600 text-white rounded font-bold shadow-sm hover:bg-purple-700">บันทึก</button></div></div></div>
+    <div id="modal-select-room" class="modal fixed inset-0 z-[70] flex items-center justify-center"><div class="absolute inset-0 bg-black bg-opacity-70"></div><div class="bg-white w-full max-w-md rounded-xl shadow-2xl z-50 overflow-hidden transform transition-all scale-100"><div class="bg-kmutt-orange text-white px-6 py-4"><h3 class="font-bold text-lg"><i class="fas fa-door-open mr-2"></i> เลือกห้องเรียน</h3><p id="room-sel-info" class="text-xs text-orange-100 opacity-90 mt-1">...</p></div><div class="p-4 bg-yellow-50 text-xs text-yellow-800 border-b border-yellow-100"><i class="fas fa-info-circle mr-1"></i> แสดงเฉพาะห้องที่ <b>ว่าง</b> และ <b>จุพอ</b></div><div id="room-list-options" class="p-2 max-h-60 overflow-y-auto custom-scroll bg-gray-50"></div><div class="p-3 border-t bg-white flex justify-end"><button onclick="app.cancelRoomSelect()" class="text-sm text-gray-500 hover:text-gray-800 font-bold px-4">ยกเลิก</button></div></div></div>
+    
+    <!-- Room Edit with Schedule -->
+    <div id="modal-simple-edit" class="modal fixed inset-0 z-50 flex items-center justify-center"><div class="absolute inset-0 bg-black bg-opacity-60"></div><div class="bg-white w-full max-w-5xl rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[90vh]"><div class="bg-white border-b px-6 py-4 flex justify-between"><h3 id="simple-edit-title" class="font-bold text-lg text-gray-800">Edit Info</h3><button onclick="app.closeModal('modal-simple-edit')" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button></div><div class="p-6 overflow-y-auto custom-scroll"><input type="hidden" id="simple-edit-type"><input type="hidden" id="simple-edit-id"><div class="grid grid-cols-3 gap-4 mb-6"><div><label class="form-label">ID / Code</label><input id="simple-edit-code" class="form-input"></div><div><label class="form-label">ชื่อ (Name)</label><input id="simple-edit-name" class="form-input"></div><div><label class="form-label">จำนวนรับ / ความจุ</label><input id="simple-edit-cap" type="number" class="form-input"></div></div><div id="room-schedule-view" class="hidden"><h4 class="font-bold text-gray-700 mb-2 border-b">ตารางการใช้ห้อง (Room Schedule)</h4><div class="border rounded-lg p-2 bg-gray-50 overflow-x-auto"><div id="room-edit-grid" class="min-w-[800px]"></div></div></div></div><div class="bg-gray-50 px-6 py-4 flex justify-between gap-2 border-t"><button onclick="app.deleteSimpleItem()" id="btn-del-simple" class="text-red-500 text-sm font-bold hover:underline">Delete</button><div class="flex gap-2"><button onclick="app.closeModal('modal-simple-edit')" class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">Cancel</button><button onclick="app.saveSimpleEdit()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded font-bold hover:bg-blue-700">Save</button></div></div></div></div>
+
+    <script>
+        var app = (function() {
+            const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+            const SLOTS = Array.from({length: 14}, (_, i) => {
+                const startMin = 30 + (i * 60);
+                const h = 8 + Math.floor(startMin / 60);
+                const m = startMin % 60;
+                return { id: i, label: `${h}:${m.toString().padStart(2,'0')}` };
+            });
+
+            // --- UTILS & HELPERS ---
+            const safeSetHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+            let dragSrc = null; let pendingDrop = null; let toastTimer = null; let confirmCallback = null;
+            
+            function showConfirm(msg, cb) { safeSetHTML('confirm-msg', msg); confirmCallback=cb; document.getElementById('modal-confirm').classList.add('active'); } 
+            function processConfirm() { if(confirmCallback) confirmCallback(); closeModal('modal-confirm'); confirmCallback=null; } 
+            function closeModal(id) { document.getElementById(id).classList.remove('active'); } 
+            function hideToast() { document.getElementById('toast').classList.add('translate-x-full'); } 
+            function showToast(msg, type) { 
+                if (toastTimer) clearTimeout(toastTimer); const t=document.getElementById('toast'); document.getElementById('toast-msg').innerText=msg; safeSetHTML('toast-icon', type==='error'?'<i class="fas fa-exclamation-circle"></i>':'<i class="fas fa-check-circle"></i>'); document.getElementById('toast-title').innerText=type==='error'?'Error':'Success'; t.className=`fixed bottom-5 right-5 px-6 py-4 rounded-lg shadow-xl text-white transform transition-transform duration-300 z-[100] flex items-center gap-3 border-l-4 border-white ${type==='error'?'bg-red-600':'bg-green-600'} max-w-md cursor-pointer`; t.classList.remove('translate-x-full'); if(type!=='error') toastTimer=setTimeout(()=>t.classList.add('translate-x-full'), 3000); 
+            }
+            function toggleFixedMode() { 
+                const isFixed = document.getElementById('subj-fixed').checked; 
+                document.getElementById('fixed-options').classList.toggle('hidden', !isFixed); 
+                if (isFixed) {
+                    const fixDay = document.getElementById('fix-day');
+                    const fixStart = document.getElementById('fix-start');
+                    if (fixDay.innerHTML === '') { 
+                         fixDay.innerHTML = DAYS.map(d => `<option value="${d}">${d}</option>`).join('');
+                         fixStart.innerHTML = SLOTS.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+                    }
+                }
+            }
+            function updateRatioTotal() {
+                let total = 0;
+                document.querySelectorAll('.prof-check').forEach(cb => {
+                    const inp = document.querySelector(`.prof-ratio[data-pid="${cb.value}"]`);
+                    if(cb.checked) { inp.disabled = false; total += parseFloat(inp.value)||0; } else { inp.disabled = true; inp.value = ''; }
+                });
+                const l = document.getElementById('total-ratio');
+                l.innerText = `Total: ${total.toFixed(0)}%`;
+                l.className = Math.round(total) === 100 ? "text-xs font-bold text-green-600" : "text-xs font-bold text-red-500";
+            }
+            function handleProfCheck(cb) {
+                const id = document.getElementById('subj-id').value;
+                const isNew = !id; 
+                const checks = document.querySelectorAll('.prof-check:checked');
+                const count = checks.length;
+                const targetInp = document.querySelector(`.prof-ratio[data-pid="${cb.value}"]`);
+                
+                if (isNew) {
+                    if(count > 0) {
+                        const avg = (100 / count).toFixed(2);
+                        document.querySelectorAll('.prof-ratio').forEach(inp => { const c = document.querySelector(`.prof-check[value="${inp.dataset.pid}"]`); if(c.checked) { inp.disabled = false; inp.value = avg; } else { inp.disabled = true; inp.value = ''; } });
+                    }
+                } else {
+                    if (cb.checked) {
+                        let currentSum = 0; document.querySelectorAll('.prof-ratio').forEach(inp => { if(!inp.disabled && inp !== targetInp) currentSum += parseFloat(inp.value)||0; });
+                        const remain = Math.max(0, 100 - currentSum);
+                        targetInp.disabled = false; targetInp.value = remain;
+                    } else { targetInp.disabled = true; targetInp.value = ''; }
+                }
+                
+                const insts = []; document.querySelectorAll('.prof-check:checked').forEach(c => { const v = document.querySelector(`.prof-ratio[data-pid="${c.value}"]`).value; insts.push({id: c.value, ratio: v}); });
+                renderProfList(insts);
+            }
+
+            let db = {
+                acadYear: '2/2568',
+
+                years: [
+                    // --- ปริญญาตรี (Undergraduate) ---
+                    // หลักสูตรปกติ (TH)
+                    { id: 'TH-B1A', name: 'ป.ตรี (ปกติ) ปี 1 (A)', count: 45 },
+                    { id: 'TH-B1B', name: 'ป.ตรี (ปกติ) ปี 1 (B)', count: 45 },
+                    
+                    { id: 'TH-B2A', name: 'ป.ตรี (ปกติ) ปี 2 (A)', count: 45 },
+                    { id: 'TH-B2B', name: 'ป.ตรี (ปกติ) ปี 2 (B)', count: 45 },
+                    
+                    { id: 'TH-B3A', name: 'ป.ตรี (ปกติ) ปี 3 (A)', count: 45 },
+                    { id: 'TH-B3B', name: 'ป.ตรี (ปกติ) ปี 3 (B)', count: 45 },
+                    
+                    { id: 'TH-B4A', name: 'ป.ตรี (ปกติ) ปี 4 (A)', count: 45 },
+                    { id: 'TH-B4B', name: 'ป.ตรี (ปกติ) ปี 4 (B)', count: 45 },
+                    
+                    { id: 'TH-B5A+', name: 'ป.ตรี (ปกติ) ปีสูง (A)', count: 45 },
+                    { id: 'TH-B5B+', name: 'ป.ตรี (ปกติ) ปีสูง (B)', count: 45 },
+                    
+                    // หลักสูตรนานาชาติ (IT)
+                    { id: 'IT-B1A', name: 'ป.ตรี (Inter) ปี 1 (A)', count: 45 },
+                    { id: 'IT-B1B', name: 'ป.ตรี (Inter) ปี 1 (B)', count: 45 },
+                    
+                    { id: 'IT-B2A', name: 'ป.ตรี (Inter) ปี 2 (A)', count: 45 },
+                    { id: 'IT-B2B', name: 'ป.ตรี (Inter) ปี 2 (B)', count: 45 },
+                    
+                    { id: 'IT-B3A', name: 'ป.ตรี (Inter) ปี 3 (A)', count: 45 },
+                    { id: 'IT-B3B', name: 'ป.ตรี (Inter) ปี 3 (B)', count: 45 },
+                    
+                    { id: 'IT-B4A', name: 'ป.ตรี (Inter) ปี 4 (A)', count: 45 },
+                    { id: 'IT-B4B', name: 'ป.ตรี (Inter) ปี 4 (B)', count: 45 },
+                    
+                    { id: 'IT-B5A+', name: 'ป.ตรี (Inter) ปีสูง (A)', count: 45 },
+                    { id: 'IT-B5B+', name: 'ป.ตรี (Inter) ปีสูง (B)', count: 45 },
+
+                    // --- ปริญญาโท (Master's) - หลักสูตรปกติ ---
+                    // STR - โครงสร้าง
+                    { id: 'STR-Grad', name: 'ป.โท (โครงสร้าง) ปี 1', count: 40 },
+                    // GEO - ธรณี
+                    { id: 'GEO-Grad', name: 'ป.โท (ธรณี) ปี 1', count: 40 },
+                    // WRE - ทรัพยากรน้ำ
+                    { id: 'WRE-Grad', name: 'ป.โท (น้ำ) ปี 1', count: 40 },
+                    // TPE - จราจรและขนส่ง
+                    { id: 'TPE-Grad', name: 'ป.โท (ขนส่ง) ปี 1', count: 40 },
+                    // --- ปริญญาโท (Master's) - หลักสูตรพิเศษ ---
+                    // CET - เทคโนโลยีวิศวกรรมโยธา
+                    { id: 'CET-Grad', name: 'ป.โท (CET) ปี 1', count: 40 },
+                    // CM - บริหารงานก่อสร้าง
+                    { id: 'CM-Grad', name: 'ป.โท (CM) ปี 1', count: 40 },
+                ],
+
+                rooms: [
+                    { id: 'CB1103', name: 'CB1103', cap: 150 },
+                    { id: 'CB1205', name: 'CB1205', cap: 40 },
+                    { id: 'CB1207', name: 'CB1207', cap: 40 },
+                    { id: 'CB1209', name: 'CB1209', cap: 80 },
+                    { id: 'CB1301', name: 'CB1301', cap: 40 },
+                    { id: 'CB1302', name: 'CB1302', cap: 40 },
+                    { id: 'CB1303', name: 'CB1303', cap: 80 },
+                    { id: 'CB1304', name: 'CB1304', cap: 80 },
+                    { id: 'CB1305', name: 'CB1305', cap: 40 },
+                    { id: 'CB1307', name: 'CB1307', cap: 40 },
+                    { id: 'CB1401', name: 'CB1401', cap: 40 },
+                    { id: 'CB1402', name: 'CB1402', cap: 40 },
+                    { id: 'CB1403', name: 'CB1403', cap: 80 },
+                    { id: 'CB1404', name: 'CB1404', cap: 80 },
+                    { id: 'CB1405', name: 'CB1405', cap: 40 },
+                    { id: 'CB1406', name: 'CB1406', cap: 40 },
+                    { id: 'CB1407', name: 'CB1407', cap: 40 },
+                    { id: 'CB1501', name: 'CB1501', cap: 80 },
+                    { id: 'CB1504', name: 'CB1504', cap: 80 },
+                    { id: 'CB1505', name: 'CB1505', cap: 40 },
+                    { id: 'CB2201', name: 'CB2201', cap: 150 },
+                    { id: 'CB2301', name: 'CB2301', cap: 80 },
+                    { id: 'CB2401', name: 'CB2401', cap: 80 },
+                    { id: 'CB2402', name: 'CB2402', cap: 40 },
+                    { id: 'CB2403', name: 'CB2403', cap: 80 },
+                    { id: 'CB2404', name: 'CB2404', cap: 80 },
+                    { id: 'CB2405', name: 'CB2405', cap: 40 },
+                    { id: 'CB2406', name: 'CB2406', cap: 40 },
+                    { id: 'CB2407', name: 'CB2407', cap: 80 },
+                    { id: 'CB2408', name: 'CB2408', cap: 80 },
+                    { id: 'CB2501', name: 'CB2501', cap: 150 },
+                    { id: 'CB2502', name: 'CB2502', cap: 80 },
+                    { id: 'CB2503', name: 'CB2503', cap: 80 },
+                    { id: 'CB2504', name: 'CB2504', cap: 80 },
+                    { id: 'CB2505', name: 'CB2505', cap: 100 },
+                    { id: 'CB2506', name: 'CB2506', cap: 120 },
+                    { id: 'CB2507', name: 'CB2507', cap: 120 },
+                    { id: 'CB2601', name: 'CB2601', cap: 150 },
+                    { id: 'CB2602', name: 'CB2602', cap: 80 },
+                    { id: 'CB2603', name: 'CB2603', cap: 80 },
+                    { id: 'CB2604', name: 'CB2604', cap: 80 },
+                    { id: 'CB2605', name: 'CB2605', cap: 100 },
+                    { id: 'CB2606', name: 'CB2606', cap: 120 },
+                    { id: 'CB2607', name: 'CB2607', cap: 200 },
+                    { id: 'Drawing 1', name: 'Drawing 1', cap: 80 },
+                    { id: 'Drawing 2', name: 'Drawing 2', cap: 80 },
+                    { id: 'SC2109', name: 'SC2109', cap: 230 },
+                    { id: 'SC2111', name: 'SC2111', cap: 120 },
+                    { id: 'SCL124', name: 'SCL124', cap: 200 },
+                    { id: 'SCL216', name: 'SCL216', cap: 440 },
+                    { id: 'GYM', name: 'GYM', cap: 100 }
+                ],
+                
+                profs: [
+                    // --- วิศวกรรมโครงสร้าง ---
+                    { id: 'P1', prefix: 'ผู้ช่วยศาสตราจารย์ ดร.', fname: 'บุญมี', lname: 'ชินนาบุญ', tel: '02 470 9147', email: 'boonme.chi@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+                    { id: 'P2', prefix: 'ศาสตราจารย์ ดร.', fname: 'สมชาย', lname: 'ชูชีพสกุล', tel: '02 470 8003', email: 'somchai.chu@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+                    { id: 'P3', prefix: 'ดร.', fname: 'จุลพจน์', lname: 'จิรวัชรเดช', tel: '02 470 9149', email: 'julapot.chi@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+                    { id: 'P4', prefix: 'ผู้ช่วยศาสตราจารย์ ดร.', fname: 'อภินัติ', lname: 'อัชกุล', tel: '02 470 9148', email: 'aphinat.ash@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+                    { id: 'P5', prefix: 'ศาสตราจารย์ ดร.', fname: 'ชัย', lname: 'จาตุรพิทักษ์กุล', tel: '02 470 9314', email: 'chai.jat@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+                    { id: 'P6', prefix: 'รองศาสตราจารย์ ดร.', fname: 'ทวิช', lname: 'พูลเงิน', tel: '02 470 9145', email: 'tawich.pul@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+                    { id: 'P7', prefix: 'ศาสตราจารย์ ดร.', fname: 'สุทัศน์', lname: 'ลีลาทวีวัฒน์', tel: '02 470 9131', email: 'sutat.lee@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+                    { id: 'P8', prefix: 'รองศาสตราจารย์ ดร.', fname: 'ชัยณรงค์', lname: 'อธิสกุล', tel: '02 470 9143', email: 'chainarong.ath@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+                    { id: 'P9', prefix: 'รองศาสตราจารย์ ดร.', fname: 'วีรชาติ', lname: 'ตั้งจิรภัทร', tel: '02 470 9322', email: 'weerachart.tan@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+                    { id: 'P10', prefix: 'ผู้ช่วยศาสตราจารย์ ดร.', fname: 'รักติพงษ์', lname: 'สหมิตรมงคล', tel: '02 470 9312', email: 'raktipong.sah@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+                    { id: 'P11', prefix: 'ผู้ช่วยศาสตราจารย์ ดร.', fname: 'เอกชัย', lname: 'อยู่ประเสริฐชัย', tel: '02 470 9321', email: 'ekkachai.yoo@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+                    { id: 'P12', prefix: 'ดร.', fname: 'พีรสิทธิ์', lname: 'มหาสุวรรณชัย', tel: '02 470 9138', email: 'peerasit.mahasu@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+                    { id: 'P13', prefix: 'ดร.', fname: 'กสาน', lname: 'จันทร์โต', tel: '02 470 9313', email: 'kasan.cha@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+                    { id: 'P14', prefix: 'ดร.', fname: 'ชนิภา', lname: 'เนตรรัตนะ', tel: '', email: 'chanipa.netr@kmutt.ac.th', field: 'วิศวกรรมโครงสร้าง', busy: [] },
+
+                    // --- วิศวกรรมเทคนิคธรณี ---
+                    { id: 'P15', prefix: 'ศาสตราจารย์ ดร.', fname: 'วรัช', lname: 'ก้องกิจกุล', tel: '02 470 9304', email: 'warat.kon@kmutt.ac.th', field: 'วิศวกรรมเทคนิคธรณี', busy: [] },
+                    { id: 'P16', prefix: 'รองศาสตราจารย์ ดร.', fname: 'สมโพธิ', lname: 'อยู่ไว', tel: '02 470 9308', email: 'sompote.you@kmutt.ac.th', field: 'วิศวกรรมเทคนิคธรณี', busy: [] },
+                    { id: 'P17', prefix: 'ศาสตราจารย์ ดร.', fname: 'พรเกษม', lname: 'จงประดิษฐ์', tel: '02 470 9305', email: 'pornkasem.jon@kmutt.ac.th', field: 'วิศวกรรมเทคนิคธรณี', busy: [] },
+                    { id: 'P18', prefix: 'Asst. Prof. Dr.', fname: 'Goran', lname: 'Arangjelovski', tel: '02 470 9146', email: 'goran.ara@kmutt.ac.th', field: 'วิศวกรรมเทคนิคธรณี', busy: [] },
+                    { id: 'P19', prefix: 'ผู้ช่วยศาสตราจารย์ ดร.', fname: 'ชนา', lname: 'พุทธนานนท์', tel: '02 470 9320', email: 'chana.phu@kmutt.ac.th', field: 'วิศวกรรมเทคนิคธรณี', busy: [] },
+
+                    // --- วิศวกรรมบริหารงานก่อสร้าง ---
+                    { id: 'P20', prefix: 'ผู้ช่วยศาสตราจารย์ ดร.', fname: 'วุฒิพงศ์', lname: 'เมืองน้อย', tel: '02 470 8313', email: 'wutthipong.mou@kmutt.ac.th', field: 'วิศวกรรมบริหารงานก่อสร้าง', busy: [] },
+                    { id: 'P21', prefix: 'ผู้ช่วยศาสตราจารย์ ดร.', fname: 'สันติ', lname: 'เจริญพรพัฒนา', tel: '02 470 8313', email: 'santi.cha@kmutt.ac.th', field: 'วิศวกรรมบริหารงานก่อสร้าง', busy: [] },
+
+                    // --- วิศวกรรมขนส่ง ---
+                    { id: 'P22', prefix: 'รองศาสตราจารย์ ดร.', fname: 'อำพล', lname: 'การุณสุนทวงษ์', tel: '02 470 9150', email: 'ampol.kar@kmutt.ac.th', field: 'วิศวกรรมขนส่ง', busy: [] },
+                    { id: 'P23', prefix: 'ผู้ช่วยศาสตราจารย์ ดร.', fname: 'วศิน', lname: 'เกียรติโกมล', tel: '02 470 9140', email: 'vasin.kia@kmutt.ac.th', field: 'วิศวกรรมขนส่ง', busy: [] },
+                    { id: 'P24', prefix: 'รองศาสตราจารย์ ดร.', fname: 'วิโรจน์', lname: 'ศรีสุรภานนท์', tel: '02 470 9142', email: 'viroat.sri@kmutt.ac.th', field: 'วิศวกรรมขนส่ง', busy: [] },
+                    { id: 'P25', prefix: 'ดร.', fname: 'จำเริญ', lname: 'เส', tel: '', email: 'chamroeun.se01@kmutt.ac.th', field: 'วิศวกรรมขนส่ง', busy: [] },
+
+                    // --- วิศวกรรมทรัพยากรน้ำ ---
+                    { id: 'P26', prefix: 'ผู้ช่วยศาสตราจารย์ ดร.', fname: 'ดวงฤดี', lname: 'โฆษิตกิตติวงศ์ ก้องกิจกุล', tel: '02 470 9310', email: 'duangrudee.kos@kmutt.ac.th', field: 'วิศวกรรมทรัพยากรน้ำ', busy: [] },
+                    { id: 'P27', prefix: 'ผู้ช่วยศาสตราจารย์ ดร.', fname: 'ชัยวัฒน์', lname: 'เอกวัฒน์พานิชย์', tel: '02 470 9302', email: 'chaiwat.ekk@kmutt.ac.th', field: 'วิศวกรรมทรัพยากรน้ำ', busy: [] },
+                    { id: 'P28', prefix: 'ดร.', fname: 'วงศ์นรินทร์', lname: 'คำพอ', tel: '02 470 9310', email: 'wongnarin.kom@kmutt.ac.th', field: 'วิศวกรรมทรัพยากรน้ำ', busy: [] },
+                    { id: 'P29', prefix: 'ผู้ช่วยศาสตราจารย์ ดร.', fname: 'ชาญชัย', lname: 'เพชรพงศ์พันธุ์', tel: '02 470 9319', email: 'chanchai.pet@kmutt.ac.th', field: 'วิศวกรรมทรัพยากรน้ำ', busy: [] },
+
+                    // --- วิศวกรรมสำรวจ ---
+                    { id: 'P30', prefix: 'ผู้ช่วยศาสตราจารย์', fname: 'ธีระ', lname: 'ลาภิศชยางกูล', tel: '02 470 9137', email: 'theera.lil@kmutt.ac.th', field: 'วิศวกรรมสำรวจ', busy: [] },
+                    { id: 'P31', prefix: 'ดร.', fname: 'ธงชัย', lname: 'โพธิ์ทอง', tel: '02 470 9144', email: 'thongchai.pho@kmutt.ac.th', field: 'วิศวกรรมสำรวจ', busy: [] },
+                    
+                    // --- อาจารย์พิเศษ / อื่นๆ (เพิ่มตามคำขอ) ---
+                    { id: 'P32', prefix: 'อาจารย์', fname: 'ตะวัน', lname: '', tel: '', email: '', field: 'อาจารย์พิเศษ', busy: [] },
+                    { id: 'P33', prefix: 'อาจารย์', fname: 'ภาณุวัฒน์', lname: '', tel: '', email: '', field: 'อาจารย์พิเศษ', busy: [] },
+                    { id: 'P34', prefix: 'อาจารย์', fname: 'พิสุทธิ์', lname: 'อุ่นวงศ์', tel: '', email: '', field: 'อาจารย์พิเศษ', busy: [] }
+                ],
+
+                subjects: [
+                    // ==========================================
+                    //  1. หลักสูตรปกติ (Regular Program)
+                    // ==========================================
+
+                    // --- YEAR 1 (TH-B1) ---
+                    // วิชาเรียนรวม
+                    { "id": "TH1_101", "code": "CVE101", "sec": "1", "name": "World of Civil Engineering", "credit": 2, "workload": 2, "splitPattern": [2], "year": ["TH-B1A", "TH-B1B"], "instructors": [{id:'P19', ratio:33.33}, {id:'P29', ratio:33.33}, {id:'P12', ratio:33.34}], "isFixed": false, "fixData": null },
+                    { "id": "TH1_111_L", "code": "CVE111", "sec": "1", "name": "Engineering Drawing (Lect)", "credit": 2, "workload": 2, "splitPattern": [2], "year": ["TH-B1A", "TH-B1B"], "instructors": [{id:'P34', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "TH1_131_L", "code": "CVE131", "sec": "1", "name": "Engineering Mechanics (Lect)", "credit": 2, "workload": 2, "splitPattern": [2], "year": ["TH-B1A", "TH-B1B"], "instructors": [{id:'P8', ratio:50}, {id:'P12', ratio:50}], "isFixed": false, "fixData": null },
+                    
+                    // วิชาแยกกลุ่ม (Practice/Tut)
+                    { "id": "TH1_111_G1", "code": "CVE111", "sec": "1 (Prac)", "name": "Engineering Drawing (Prac G1)", "credit": 1, "workload": 3, "splitPattern": [3], "year": ["TH-B1A"], "instructors": [{id:'P34', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "TH1_111_G2", "code": "CVE111", "sec": "2 (Prac)", "name": "Engineering Drawing (Prac G2)", "credit": 1, "workload": 3, "splitPattern": [3], "year": ["TH-B1B"], "instructors": [{id:'P34', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "TH1_131_G1", "code": "CVE131", "sec": "1 (Tut)", "name": "Engineering Mechanics (Tut G1)", "credit": 1, "workload": 2, "splitPattern": [2], "year": ["TH-B1A"], "instructors": [{id:'P8', ratio:50}, {id:'P12', ratio:50}], "isFixed": false, "fixData": null },
+                    { "id": "TH1_131_G2", "code": "CVE131", "sec": "2 (Tut)", "name": "Engineering Mechanics (Tut G2)", "credit": 1, "workload": 2, "splitPattern": [2], "year": ["TH-B1B"], "instructors": [{id:'P8', ratio:50}, {id:'P12', ratio:50}], "isFixed": false, "fixData": null },
+                    
+                    // วิชา Fixed (Science/GenEd)
+                    { "id": "TH1_PHY104_L", "code": "PHY104", "sec": "1", "name": "General Physics II (Lec)", "credit": 2, "workload": 2, "splitPattern": [2], "year": ["TH-B1A", "TH-B1B"], "instructors": [], "isFixed": true, "fixData": { "day": "MON", "start": 2, "room": "CB2201" } }, // 10:30
+                    { "id": "TH1_MTH102", "code": "MTH102", "sec": "1", "name": "Mathematics II", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B1A", "TH-B1B"], "instructors": [], "isFixed": true, "fixData": { "day": "TUE", "start": 0, "room": "CB2201" } }, // 8:30
+                    { "id": "TH1_PHY104_T", "code": "PHY104", "sec": "1", "name": "General Physics II (Tut)", "credit": 1, "workload": 1, "splitPattern": [1], "year": ["TH-B1A", "TH-B1B"], "instructors": [], "isFixed": true, "fixData": { "day": "TUE", "start": 3, "room": "CB2201" } }, // 11:30
+                    { "id": "TH1_LNG220", "code": "LNG220", "sec": "1", "name": "Academic English", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B1A", "TH-B1B"], "instructors": [], "isFixed": true, "fixData": { "day": "WED", "start": 1, "room": "CB2301" } }, // 9:30
+                    { "id": "TH1_PHY192", "code": "PHY192", "sec": "1", "name": "General Physics Laboratory II", "credit": 1, "workload": 2, "splitPattern": [2], "year": ["TH-B1A", "TH-B1B"], "instructors": [], "isFixed": true, "fixData": { "day": "THU", "start": 0, "room": "SCL216" } }, // 8:30
+                    { "id": "TH1_GEN101", "code": "GEN101", "sec": "1", "name": "Physical Education", "credit": 1, "workload": 2, "splitPattern": [2], "year": ["TH-B1A", "TH-B1B"], "instructors": [], "isFixed": true, "fixData": { "day": "THU", "start": 2, "room": "GYM" } }, // 10:30
+
+                    // --- YEAR 2 (TH-B2) ---
+                    // วิชาเรียนรวม
+                    { "id": "TH2_200", "code": "CVE200", "sec": "1", "name": "Probability and Statistics", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B2A", "TH-B2B"], "instructors": [{id:'P29', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "TH2_235_L", "code": "CVE235", "sec": "1", "name": "Civil Eng. Materials (Lec)", "credit": 2, "workload": 2, "splitPattern": [2], "year": ["TH-B2A", "TH-B2B"], "instructors": [{id:'P9', ratio:50}, {id:'P10', ratio:50}], "isFixed": false, "fixData": null },
+                    { "id": "TH2_237", "code": "CVE237", "sec": "1", "name": "Structural Analysis I", "credit": 3, "workload": 3, "splitPattern": [2, 1], "year": ["TH-B2A", "TH-B2B"], "instructors": [{id:'P1', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "TH2_240", "code": "CVE240", "sec": "1", "name": "Applied Mathematics", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B2A", "TH-B2B"], "instructors": [{id:'P14', ratio:50}, {id:'P8', ratio:50}], "isFixed": false, "fixData": null },
+                    { "id": "TH2_281", "code": "CVE281", "sec": "1", "name": "Fluid Mechanics", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B2A", "TH-B2B"], "instructors": [{id:'P28', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "TH2_201", "code": "CVE201", "sec": "1", "name": "Civil Engineering Design I", "credit": 2, "workload": 4, "splitPattern": [4], "year": ["TH-B2A", "TH-B2B"], "instructors": [{id:'P16', ratio:50}, {id:'P8', ratio:50}], "isFixed": false, "fixData": null },
+                    { "id": "TH2_225", "code": "CVE225", "sec": "1", "name": "Surveying Field Camp", "credit": 1, "workload": 3, "splitPattern": [3], "year": ["TH-B2A", "TH-B2B"], "instructors": [{id:'P31', ratio:50}, {id:'P30', ratio:50}], "isFixed": false, "fixData": null },
+
+                    // วิชาแยกกลุ่ม (Lab)
+                    { "id": "TH2_235_G1", "code": "CVE235", "sec": "1 (Lab)", "name": "Civil Eng. Materials (Lab G1)", "credit": 1, "workload": 3, "splitPattern": [3], "year": ["TH-B2A"], "instructors": [{id:'P14', ratio:25}, {id:'P10', ratio:25}, {id:'P9', ratio:25}, {id:'P12', ratio:25}], "isFixed": false, "fixData": null },
+                    { "id": "TH2_235_G2", "code": "CVE235", "sec": "2 (Lab)", "name": "Civil Eng. Materials (Lab G2)", "credit": 1, "workload": 3, "splitPattern": [3], "year": ["TH-B2B"], "instructors": [{id:'P14', ratio:25}, {id:'P10', ratio:25}, {id:'P9', ratio:25}, {id:'P12', ratio:25}], "isFixed": false, "fixData": null },
+
+                    // --- YEAR 3 (TH-B3) ---
+                    // วิชาเรียนรวม
+                    { "id": "TH3_341", "code": "CVE341", "sec": "1", "name": "Steel and Timber Design", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B3A", "TH-B3B"], "instructors": [{id:'P13', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "TH3_371", "code": "CVE371", "sec": "1", "name": "Highway Engineering", "credit": 3, "workload": 3, "splitPattern": [2, 1], "year": ["TH-B3A", "TH-B3B"], "instructors": [{id:'P24', ratio:33.33}, {id:'P23', ratio:33.33}, {id:'P22', ratio:33.34}], "isFixed": false, "fixData": null },
+                    { "id": "TH3_382", "code": "CVE382", "sec": "1", "name": "Hydraulic Engineering", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B3A", "TH-B3B"], "instructors": [{id:'P27', ratio:50}, {id:'P26', ratio:50}], "isFixed": false, "fixData": null },
+                    { "id": "TH3_364", "code": "CVE364", "sec": "1", "name": "Foundation Engineering", "credit": 3, "workload": 3, "splitPattern": [2, 1], "year": ["TH-B3A", "TH-B3B"], "instructors": [{id:'P16', ratio:50}, {id:'P17', ratio:50}], "isFixed": false, "fixData": null },
+                    { "id": "TH3_301", "code": "CVE301", "sec": "1", "name": "Civil Engineering Design II", "credit": 2, "workload": 4, "splitPattern": [1, 3], "year": ["TH-B3A", "TH-B3B"], "instructors": [{id:'P9', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "TH3_300", "code": "CVE300", "sec": "1", "name": "Civil Engineering Training", "credit": 0, "workload": 0, "splitPattern": [], "year": ["TH-B3A", "TH-B3B"], "instructors": [], "isFixed": false, "fixData": null },
+
+                    // วิชาแยกกลุ่ม (Lab)
+                    { "id": "TH3_394_G1", "code": "CVE394", "sec": "1", "name": "Hydraulics Laboratory (G1)", "credit": 1, "workload": 3, "splitPattern": [3], "year": ["TH-B3A"], "instructors": [{id:'P27', ratio:25}, {id:'P26', ratio:25}, {id:'P28', ratio:25}, {id:'P29', ratio:25}], "isFixed": false, "fixData": null },
+                    { "id": "TH3_394_G2", "code": "CVE394", "sec": "2", "name": "Hydraulics Laboratory (G2)", "credit": 1, "workload": 3, "splitPattern": [3], "year": ["TH-B3B"], "instructors": [{id:'P27', ratio:25}, {id:'P26', ratio:25}, {id:'P28', ratio:25}, {id:'P29', ratio:25}], "isFixed": false, "fixData": null },
+
+                    // --- YEAR 4 (TH-B4) ---
+                    { "id": "TH4_403", "code": "CVE403", "sec": "1", "name": "Computer-Aided Structural Analysis", "credit": 3, "workload": 3, "splitPattern": [1, 2], "year": ["TH-B4A", "TH-B4B"], "instructors": [{id:'P1', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "TH4_404", "code": "CVE404", "sec": "1", "name": "BIM", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B4A", "TH-B4B"], "instructors": [{id:'P32', ratio:50}, {id:'P12', ratio:50}], "isFixed": false, "fixData": null },
+                    { "id": "TH4_411", "code": "CVE411", "sec": "1", "name": "Modern Construction Engineering", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B4A", "TH-B4B"], "instructors": [{id:'P20', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "TH4_426", "code": "CVE426", "sec": "1", "name": "Digital Photogrammetry", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B4A", "TH-B4B"], "instructors": [{id:'P30', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "TH4_483", "code": "CVE483", "sec": "1", "name": "Water Resources Development", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B4A", "TH-B4B"], "instructors": [{id:'P27', ratio:25}, {id:'P29', ratio:25}, {id:'P28', ratio:25}, {id:'P26', ratio:25}], "isFixed": false, "fixData": null },
+                    { "id": "TH4_465", "code": "CVE465", "sec": "1", "name": "Geotechnical Engineering Design", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B4A", "TH-B4B"], "instructors": [{id:'P17', ratio:25}, {id:'P16', ratio:25}, {id:'P19', ratio:25}, {id:'P15', ratio:25}], "isFixed": false, "fixData": null },
+                    { "id": "TH4_474", "code": "CVE474", "sec": "1", "name": "Urban Transportation Systems", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B4A", "TH-B4B"], "instructors": [{id:'P24', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "TH4_444", "code": "CVE444", "sec": "1", "name": "Prestressed Concrete Design", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["TH-B4A", "TH-B4B"], "instructors": [{id:'P10', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "TH4_473", "code": "CVE473", "sec": "1", "name": "Traffic Engineering", "credit": 3, "workload": 3, "splitPattern": [2, 1], "year": ["TH-B4A", "TH-B4B"], "instructors": [{id:'P23', ratio:100}], "isFixed": false, "fixData": null },
+
+
+                    // ==========================================
+                    //  2. หลักสูตรนานาชาติ (International Program)
+                    // ==========================================
+
+                    // --- YEAR 1 (IT-B1) ---
+                    // วิชาเรียนรวม
+                    { "id": "IT1_111", "code": "CVE111", "sec": "31", "name": "Engineering Drawing (Lect)", "credit": 2, "workload": 2, "splitPattern": [2], "year": ["IT-B1A", "IT-B1B"], "instructors": [{id:'P18', ratio:100}], "isFixed": false, "fixData": null },
+                    
+                    // วิชาแยกกลุ่ม (Practice)
+                    { "id": "IT1_111_G31", "code": "CVE111", "sec": "31 (Prac)", "name": "Engineering Drawing (Prac G31)", "credit": 1, "workload": 3, "splitPattern": [3], "year": ["IT-B1A"], "instructors": [{id:'P18', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "IT1_111_G32", "code": "CVE111", "sec": "32 (Prac)", "name": "Engineering Drawing (Prac G32)", "credit": 1, "workload": 3, "splitPattern": [3], "year": ["IT-B1B"], "instructors": [{id:'P18', ratio:100}], "isFixed": false, "fixData": null },
+
+                    // วิชา Fixed (Science/GenEd)
+                    { "id": "IT1_PHY104_L", "code": "PHY104", "sec": "31", "name": "General Physics II (Lec)", "credit": 2, "workload": 2, "splitPattern": [2], "year": ["IT-B1A", "IT-B1B"], "instructors": [], "isFixed": true, "fixData": { "day": "MON", "start": 0, "room": "CB2201" } }, // 8:30
+                    { "id": "IT1_GEN111", "code": "GEN111", "sec": "31", "name": "Man and Ethics of Living", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["IT-B1A", "IT-B1B"], "instructors": [], "isFixed": true, "fixData": { "day": "TUE", "start": 1, "room": "CB2301" } }, // 9:30
+                    { "id": "IT1_PHY104_T", "code": "PHY104", "sec": "31", "name": "General Physics II (Tut)", "credit": 1, "workload": 1, "splitPattern": [1], "year": ["IT-B1A", "IT-B1B"], "instructors": [], "isFixed": true, "fixData": { "day": "TUE", "start": 5, "room": "CB2201" } }, // 13:30
+                    { "id": "IT1_PHY192", "code": "PHY192", "sec": "31", "name": "General Physics Laboratory II", "credit": 1, "workload": 2, "splitPattern": [2], "year": ["IT-B1A", "IT-B1B"], "instructors": [], "isFixed": true, "fixData": { "day": "WED", "start": 7, "room": "SCL216" } }, // 15:30
+                    { "id": "IT1_MTH102", "code": "MTH102", "sec": "31", "name": "Mathematics II", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["IT-B1A", "IT-B1B"], "instructors": [], "isFixed": true, "fixData": { "day": "THU", "start": 0, "room": "CB2201" } }, // 8:30
+                    { "id": "IT1_MEN111", "code": "MEN111", "sec": "31", "name": "Engineering Materials", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["IT-B1A", "IT-B1B"], "instructors": [], "isFixed": true, "fixData": { "day": "FRI", "start": 1, "room": "CB2401" } }, // 9:30
+
+
+                    // --- YEAR 2 (IT-B2) ---
+                    // วิชาเรียนรวม
+                    { "id": "IT2_216", "code": "CVE216", "sec": "31", "name": "Principles of Finance", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["IT-B2A", "IT-B2B"], "instructors": [{id:'P34', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "IT2_221", "code": "CVE221", "sec": "31", "name": "Surveying", "credit": 3, "workload": 3, "splitPattern": [2, 2], "year": ["IT-B2A", "IT-B2B"], "instructors": [{id:'P31', ratio:50}, {id:'P30', ratio:50}], "isFixed": false, "fixData": null },
+                    { "id": "IT2_240", "code": "CVE240", "sec": "31", "name": "Applied Mathematics", "credit": 3, "workload": 3, "splitPattern": [2, 2], "year": ["IT-B2A", "IT-B2B"], "instructors": [{id:'P14', ratio:50}, {id:'P8', ratio:50}], "isFixed": false, "fixData": null },
+                    { "id": "IT2_281", "code": "CVE281", "sec": "31", "name": "Fluid Mechanics", "credit": 2, "workload": 2, "splitPattern": [2], "year": ["IT-B2A", "IT-B2B"], "instructors": [{id:'P26', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "IT2_225", "code": "CVE225", "sec": "31", "name": "Surveying Field Camp", "credit": 1, "workload": 3, "splitPattern": [3], "year": ["IT-B2A", "IT-B2B"], "instructors": [{id:'P31', ratio:50}, {id:'P30', ratio:50}], "isFixed": false, "fixData": null },
+                    { "id": "IT2_GEN231", "code": "GEN231", "sec": "31", "name": "Miracle of Thinking", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["IT-B2A", "IT-B2B"], "instructors": [{id:'P18', ratio:50}, {id:'P26', ratio:50}], "isFixed": false, "fixData": null },
+
+                    // วิชาแยกกลุ่ม
+                    { "id": "IT2_233_G31", "code": "CVE233", "sec": "31", "name": "Mechanics of Materials (G31)", "credit": 3, "workload": 4, "splitPattern": [2, 2], "year": ["IT-B2A"], "instructors": [{id:'P3', ratio:50}, {id:'P11', ratio:50}], "isFixed": false, "fixData": null },
+                    { "id": "IT2_233_G32", "code": "CVE233", "sec": "32", "name": "Mechanics of Materials (G32)", "credit": 3, "workload": 4, "splitPattern": [2, 2], "year": ["IT-B2B"], "instructors": [{id:'P3', ratio:50}, {id:'P11', ratio:50}], "isFixed": false, "fixData": null },
+                    
+                    { "id": "IT2_223_G31", "code": "CVE223", "sec": "31", "name": "Surveying Practices (G31)", "credit": 1, "workload": 3, "splitPattern": [3], "year": ["IT-B2A"], "instructors": [{id:'P31', ratio:50}, {id:'P30', ratio:50}], "isFixed": false, "fixData": null },
+                    { "id": "IT2_223_G32", "code": "CVE223", "sec": "32", "name": "Surveying Practices (G32)", "credit": 1, "workload": 3, "splitPattern": [3], "year": ["IT-B2B"], "instructors": [{id:'P31', ratio:50}, {id:'P30', ratio:50}], "isFixed": false, "fixData": null },
+
+                    { "id": "IT2_281_G31", "code": "CVE281", "sec": "31 (Tut)", "name": "Fluid Mechanics (Tut G31)", "credit": 1, "workload": 1, "splitPattern": [2], "year": ["IT-B2A"], "instructors": [{id:'P26', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "IT2_281_G32", "code": "CVE281", "sec": "32 (Tut)", "name": "Fluid Mechanics (Tut G32)", "credit": 1, "workload": 1, "splitPattern": [2], "year": ["IT-B2B"], "instructors": [{id:'P26', ratio:100}], "isFixed": false, "fixData": null },
+
+
+                    // --- YEAR 3 (IT-B3) ---
+                    // วิชาเรียนรวม
+                    { "id": "IT3_303", "code": "CVE303", "sec": "31", "name": "Milestone Design Project", "credit": 1, "workload": 3, "splitPattern": [3], "year": ["IT-B3A", "IT-B3B"], "instructors": [{id:'P7', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "IT3_338", "code": "CVE338", "sec": "31", "name": "Structural Analysis II", "credit": 3, "workload": 3, "splitPattern": [3, 1], "year": ["IT-B3A", "IT-B3B"], "instructors": [{id:'P4', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "IT3_341", "code": "CVE341", "sec": "31", "name": "Steel and Timber Design", "credit": 4, "workload": 6, "splitPattern": [3, 3], "year": ["IT-B3A", "IT-B3B"], "instructors": [{id:'P4', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "IT3_342", "code": "CVE342", "sec": "31", "name": "Reinforced Concrete Design", "credit": 4, "workload": 6, "splitPattern": [3, 3], "year": ["IT-B3A", "IT-B3B"], "instructors": [{id:'P13', ratio:50}, {id:'P6', ratio:50}], "isFixed": false, "fixData": null },
+                    { "id": "IT3_371", "code": "CVE371", "sec": "31", "name": "Highway Engineering", "credit": 3, "workload": 3, "splitPattern": [2, 2], "year": ["IT-B3A", "IT-B3B"], "instructors": [{id:'P24', ratio:25}, {id:'P23', ratio:25}, {id:'P22', ratio:25}, {id:'P25', ratio:25}], "isFixed": false, "fixData": null },
+                    { "id": "IT3_300", "code": "CVE300", "sec": "31", "name": "Industrial Training", "credit": 0, "workload": 0, "splitPattern": [], "year": ["IT-B3A", "IT-B3B"], "instructors": [], "isFixed": false, "fixData": null },
+
+                    // --- YEAR 4 (IT-B4) ---
+                    { "id": "IT4_464", "code": "CVE464", "sec": "31", "name": "Foundation Engineering", "credit": 3, "workload": 3, "splitPattern": [1, 3], "year": ["IT-B4A", "IT-B4B"], "instructors": [{id:'P16', ratio:25}, {id:'P17', ratio:25}, {id:'P19', ratio:25}, {id:'P18', ratio:25}], "isFixed": false, "fixData": null },
+                    { "id": "IT4_403", "code": "CVE403", "sec": "31", "name": "Computer-Aided Structural Analysis", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["IT-B4A", "IT-B4B"], "instructors": [{id:'P33', ratio:100}], "isFixed": false, "fixData": null },
+                    { "id": "IT4_404", "code": "CVE404", "sec": "31", "name": "BIM", "credit": 3, "workload": 3, "splitPattern": [3], "year": ["IT-B4A", "IT-B4B"], "instructors": [{id:'P19', ratio:100}], "isFixed": false, "fixData": null }
+                ],
+                sessions: [],
+                settings: { deptConstraints: {}, startIdx: 0, endIdx: 9, maxCon: 4, checkRoom: true }
+            };
+
+            // --- FUNCTION IMPLEMENTATIONS ---
+            function init() { 
+                const ay = localStorage.getItem('kmutt_acad_year');
+                if(ay) db.acadYear = ay;
+                document.getElementById('acad-year').value = db.acadYear;
+                document.getElementById('report-acad-year-text').innerText = db.acadYear;
+
+            // --- DEFAULT DEPARTMENT'S CONSTRAINT ---
+                const def = {};
+                DAYS.forEach(d => {
+                    for(let i=0; i<14; i++) {
+                        // LUNCHTIME
+                        if (i === 4) def[`${d}_${i}`] = 1;
+
+                        // WEEKLY MEETING TIME
+                        if (d === 'MON' && i >= 5 && i <= 8) def[`${d}_${i}`] = 2;
+
+                        // SAT - SUN
+                        if (d === 'SAT' || d === 'SUN') {
+                            if (i === 0) def[`${d}_${i}`] = 2;
+                            else if (i >= 9) def[`${d}_${i}`] = 2;
+                            else if (i !== 4) def[`${d}_${i}`] = 1;
+                        }
+                    }
+                });
+                db.settings.deptConstraints = def;
+
+                syncSessions(); renderAll(); switchTab('setup');
+            }
+
+            function saveAcadYear() { db.acadYear = document.getElementById('acad-year').value; localStorage.setItem('kmutt_acad_year', db.acadYear); document.getElementById('report-acad-year-text').innerText = db.acadYear; renderReport(); }
+
+            function syncSessions() {
+                const oldAssigned = db.sessions.reduce((acc, s) => { if(s.assigned) acc[s.id] = s.assigned; return acc; }, {});
+                db.sessions = [];
+                db.subjects.forEach(sub => {
+                    const pattern = sub.splitPattern && sub.splitPattern.length ? sub.splitPattern : [sub.credit];
+                    pattern.forEach((h, idx) => {
+                        const sid = `${sub.id}_${idx}`;
+                        let assign = oldAssigned[sid] || null;
+                        if(sub.isFixed && sub.fixData) { assign = { slot: `${sub.fixData.day}_${sub.fixData.start}`, room: sub.fixData.room }; }
+                        db.sessions.push({ id: sid, subjId: sub.id, partIndex: idx+1, totalParts: pattern.length, hours: h, assigned: assign });
+                    });
+                });
+            }
+
+            function renderAll() { renderSetupLists(); renderSubjectTable(); renderCalendar(); renderPool(); renderReport(); }
+            function switchTab(id) { 
+                document.querySelectorAll('.section-content').forEach(el => el.classList.add('hidden')); 
+                document.getElementById(id + '-section').classList.remove('hidden'); 
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); 
+                document.getElementById('nav-' + id).classList.add('active'); 
+                if(id === 'scheduler') { renderCalendar(); renderPool(); } 
+                if(id === 'report') renderReport(); 
+                if(id === 'roomreport') renderRoomReport(); 
+            }
+
+            // SETUP LISTS
+            function renderSetupLists() {
+                // --- 1. เก็บค่า Filter ที่เลือกอยู่ปัจจุบันไว้ก่อน ---
+                const filterEl = document.getElementById('view-filter');
+                const currentVal = filterEl ? filterEl.value : 'ALL';
+                // ----------------------------------------------
+
+                // ส่วนการแสดงผลรายการด้านซ้าย (คงเดิม)
+                const mkItem = (id, text, func) => `<div onclick="${func}('${id}')" class="flex justify-between items-center p-2 hover:bg-gray-50 border-b border-gray-100 last:border-0 group"><div class="truncate pr-2 w-full text-sm text-gray-700">${text}</div><button class="text-gray-300 group-hover:text-[#F04E23] opacity-0 group-hover:opacity-100 transition flex-shrink-0"><i class="fas fa-edit"></i></button></div>`;
+                
+                safeSetHTML('list-years', db.years.map(y => mkItem(y.id, `<b>${y.id}</b> : ${y.name} <span class="text-xs text-gray-400 font-light">(จำนวน ${y.count} คน)</span>`, 'app.editYear')).join(''));
+                safeSetHTML('list-rooms', db.rooms.map(r => mkItem(r.id, `<b>${r.id}</b> : ${r.name} <span class="text-xs text-gray-400 font-light">(ความจุ ${r.cap} ที่นั่ง)</span>`, 'app.editRoom')).join(''));
+                safeSetHTML('list-profs', db.profs.map(p => mkItem(p.id, `<b>${p.fname} ${p.lname}</b> <span class="text-xs text-gray-400 ml-1">(${p.prefix})</span>`, 'app.editProf')).join(''));
+                
+                // สร้าง Options ของ Filter
+                const yearOpts = db.years.map(y => `<option value="${y.id}">${y.name}</option>`).join('');
+                safeSetHTML('view-filter', `<option value="ALL">แสดงทั้งหมด</option>` + yearOpts);
+                
+                // สร้าง Options ของ Report
+                const fields = [...new Set(db.profs.map(p=>p.field).filter(f=>f))].map(f=>`<option value="FIELD:${f}">สาขา: ${f}</option>`).join('');
+                const profOpts = db.profs.map(p => `<option value="${p.id}">${p.fname} ${p.lname}</option>`).join('');
+                safeSetHTML('report-filter', `<option value="ALL">อาจารย์ทุกคน (Summary Only)</option>${fields}${profOpts}`);
+
+                // --- 2. คืนค่า Filter กลับไปที่เดิม ---
+                if(filterEl) filterEl.value = currentVal;
+                // -----------------------------------
+            }
+
+function renderSubjectTable() {
+    safeSetHTML('table-subjects', db.subjects.map(s => {
+        const pNames = s.instructors.map(inst => { const p = db.profs.find(x => x.id === inst.id); return p ? `${p.fname} (${inst.ratio}%)` : '?'; }).join(', ');
+        
+        // --- แก้ไขส่วนแสดงชั้นปี (รองรับ Array) ---
+        // ถ้า s.year เป็น String ให้แปลงเป็น Array ก่อน (กันเหนียว)
+        const yearsArr = Array.isArray(s.year) ? s.year : [s.year];
+        
+        const yearDisplay = yearsArr.map(yId => {
+            const yObj = db.years.find(y => y.id === yId);
+            return yObj 
+                ? `<span class="inline-block bg-gray-100 rounded px-1 mb-1 text-xs border border-gray-300 text-gray-700 font-bold mr-1" title="${yObj.name}">${yObj.id} <span class="text-gray-400 font-normal">(${yObj.count})</span></span>` 
+                : `<span class="text-red-500">${yId}</span>`;
+        }).join('');
+        // ---------------------------------------
+
+        const fixBadge = s.isFixed ? '<span class="bg-gray-600 text-white text-[10px] px-1 rounded ml-1">FIX</span>' : '';
+
+        return `<tr onclick="app.editSubject('${s.id}')" class="group hover:bg-orange-50 transition border-b border-gray-100 cursor-pointer">
+            <td class="px-4 py-3 font-mono font-bold text-gray-700">${s.code}${fixBadge}</td>
+            <td class="px-4 py-3 text-gray-700 text-center">${s.sec}</td>
+            <td class="px-4 py-3">${s.name}</td>
+            <td class="px-4 py-3 text-center">${s.credit}</td>
+            <td class="px-4 py-3 text-center text-gray-700">${s.workload||'-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${pNames}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${yearDisplay}</td>
+            <td class="px-4 py-3 text-center"><button onclick="app.editSubject('${s.id}')" class="text-gray-400 group-hover:text-[#F04E23] transition"><i class="fas fa-edit"></i></button></td>
+        </tr>`;
+    }).join(''));
+}
+
+            // SETTINGS
+            function openSettings() {
+                document.getElementById('set-max-con').value = db.settings.maxCon;
+                const opts = SLOTS.map(s=>`<option value="${s.id}">${s.label}</option>`).join('');
+                safeSetHTML('set-start', opts); safeSetHTML('set-end', opts);
+                document.getElementById('set-start').value = db.settings.startIdx;
+                document.getElementById('set-end').value = db.settings.endIdx;
+                document.getElementById('set-check-room').checked = (db.settings.checkRoom !== false); // Default true
+                renderDeptGrid();
+                document.getElementById('modal-settings').classList.add('active');
+            }
+            function renderDeptGrid() {
+                const grid = document.getElementById('dept-avail-grid');
+                let h = `<div class="grid grid-cols-[60px_repeat(14,1fr)] gap-1 text-[10px]"><div class="text-center font-bold text-gray-400">Day</div>`;
+                SLOTS.forEach(s => h += `<div class="text-center text-gray-400 font-bold">${s.label}</div>`);
+                DAYS.forEach((d, di) => {
+                    h += `<div class="flex items-center justify-center font-bold text-gray-500">${d}</div>`;
+                    SLOTS.forEach((s, si) => {
+                        const sid = `${d}_${si}`;
+                        const lvl = db.settings.deptConstraints[sid] || 0;
+                        const cls = lvl === 2 ? 'bg-red-500' : (lvl === 1 ? 'bg-orange-400' : 'bg-white');
+                        h += `<div onclick="app.toggleDeptBusy(this,'${sid}')" class="avail-slot h-8 border rounded flex items-center justify-center ${cls}" data-lvl="${lvl}"></div>`;
+                    });
+                });
+                h += `</div>`;
+                grid.innerHTML = h;
+            }
+            function toggleDeptBusy(el, sid) { 
+                let lvl = parseInt(el.dataset.lvl);
+                lvl = (lvl === 0) ? 2 : (lvl === 2 ? 1 : 0);
+                el.dataset.lvl = lvl;
+                el.className = `avail-slot h-8 border rounded flex items-center justify-center ${lvl === 2 ? 'bg-red-500' : (lvl === 1 ? 'bg-orange-400' : 'bg-white')}`;
+                db.settings.deptConstraints[sid] = lvl;
+            }
+            function saveSettings() {
+                db.settings.maxCon = parseInt(document.getElementById('set-max-con').value);
+                db.settings.startIdx = parseInt(document.getElementById('set-start').value);
+                db.settings.endIdx = parseInt(document.getElementById('set-end').value);
+                db.settings.checkRoom = document.getElementById('set-check-room').checked;
+                renderAll(); closeModal('modal-settings'); showToast('บันทึกการตั้งค่าเรียบร้อย', 'success');
+            }
+
+            // SCHEDULER
+            function renderPool() {
+                const unassigned = db.sessions.filter(s => !s.assigned); 
+                const poolCount = document.getElementById('pool-count'); if(poolCount) poolCount.innerText = unassigned.length;
+                safeSetHTML('pool-container', unassigned.map(s => {
+                    const sub = db.subjects.find(x => x.id === s.subjId);
+                    const yearIdx = db.years.findIndex(y=>y.id===sub.year);
+                    const colors = ['border-l-blue-500', 'border-l-green-500', 'border-l-yellow-500', 'border-l-pink-500', 'border-l-purple-500'];
+                    const colorClass = colors[yearIdx % colors.length] || 'border-l-gray-500';
+                    return `<div draggable="true" ondragstart="app.dragStart(event, '${s.id}')" class="draggable-item bg-white p-3 rounded border-l-4 ${colorClass} shadow-sm hover:shadow-md mb-2 relative group"><div class="flex justify-between"><span class="font-bold text-gray-800 text-sm">${sub.code}-${sub.sec}</span><span class="text-[10px] bg-gray-200 px-1.5 rounded font-bold">${s.hours} ชม.</span></div><div class="text-xs text-gray-600 truncate">${sub.name}</div></div>`;
+                }).join(''));
+            }
+
+function renderCalendar() {
+    let html = `<div class="calendar-row sticky top-0 z-30 shadow-sm bg-gray-400 h-8 border-b border-gray-400"><div class="day-header bg-gray-300 text-black font-bold border-r border-gray-400 text-xs">DAY</div><div class="slots-container bg-white">${SLOTS.map(s=>`<div class="slot-col border-r border-gray-200 text-center text-xs font-bold text-black py-1 bg-gray-300 border-gray-400 flex items-center justify-center">${s.label}</div>`).join('')}</div></div>`;
+    const filter = document.getElementById('view-filter').value;
+    
+    DAYS.forEach(day => {
+        const sessions = db.sessions.filter(s => s.assigned && s.assigned.slot.startsWith(day));
+        let rows = [];
+        sessions.forEach(s => {
+            const sub = db.subjects.find(x=>x.id===s.subjId);
+            
+            // --- แก้ไข Logic การ Filter ---
+            const subYears = Array.isArray(sub.year) ? sub.year : [sub.year];
+            if(filter !== 'ALL' && !subYears.includes(filter)) return;
+            // ---------------------------
+            
+            const start = parseInt(s.assigned.slot.split('_')[1]);
+            let r = 0;
+            while(rows.some(item => item.row === r && !(start + s.hours <= item.start || start >= item.end))) r++;
+            rows.push({ s, start, end: start + s.hours, row: r });
+        });
+                    const h = Math.max(80, (rows.length > 0 ? Math.max(...rows.map(x=>x.row))+1 : 0) * 40 + 20);
+                    
+                    let bgOverlay = '';
+                    SLOTS.forEach((s, idx) => {
+                          const sid = `${day}_${idx}`;
+                          const lvl = db.settings.deptConstraints[sid] || 0;
+                          if (lvl > 0) bgOverlay += `<div class="absolute top-0 bottom-0 ${lvl===2?'dept-hard-bg':'dept-soft-bg'}" style="left: ${idx * (100/14)}%; width: ${100/14}%;"></div>`;
+                    });
+
+                    html += `<div class="calendar-row relative" style="height: ${h}px"><div class="day-header">${day}</div><div class="slots-container bg-white relative w-full">${bgOverlay}${SLOTS.map((slot, sIdx) => {
+                        const slotId = `${day}_${sIdx}`;
+                        return `<div ondragover="event.preventDefault()" ondrop="app.drop(event, '${slotId}')" class="slot-col drop-zone h-full border-r border-gray-100"></div>`;
+                    }).join('')}${rows.map(r => {
+                        const sub = db.subjects.find(x => x.id === r.s.subjId);
+                        const top = 5 + (r.row * 36);
+                        let conflict = false;
+                        sessions.forEach(o => { 
+                            if(o.id===r.s.id) return; const os=parseInt(o.assigned.slot.split('_')[1]); 
+                            if(r.start<os+o.hours && r.end>os) { 
+                                const osub=db.subjects.find(x=>x.id===o.subjId); 
+                                const isMerged = (sub.code === osub.code && sub.sec !== osub.sec && r.s.assigned.room === o.assigned.room && sub.instructors.every(i=>osub.instructors.some(oi=>oi.id===i.id)));
+                                if(!isMerged) {
+                                    if(o.assigned.room===r.s.assigned.room || sub.year===osub.year || sub.instructors.some(i=>osub.instructors.some(oi=>oi.id===i.id))) conflict=true; 
+                                }
+                            }
+                        });
+const firstYear = Array.isArray(sub.year) ? sub.year[0] : sub.year;
+        const yearIdx = db.years.findIndex(y=>y.id===firstYear);
+                        const bgColors = ['bg-blue-100 border-blue-500', 'bg-green-100 border-green-500', 'bg-yellow-100 border-yellow-500', 'bg-pink-100 border-pink-500', 'bg-purple-100 border-purple-500'];
+                        const normalColor = sub.isFixed ? 'bg-gray-600 border-gray-800 text-white' : (bgColors[yearIdx % bgColors.length] || 'bg-gray-100 border-gray-500');
+                        const colorClass = conflict ? 'bg-red-100 border-red-500 text-red-900' : normalColor;
+                        const roomName = db.rooms.find(x=>x.id===r.s.assigned.room)?.name || '?';
+                        const profName = sub.instructors.length > 0 ? db.profs.find(p=>p.id===sub.instructors[0].id).fname : '';
+                        return `<div class="absolute px-1" style="grid-column: ${r.start+1} / span ${r.s.hours}; top: ${top}px; height: 32px; width: 100%;"><div draggable="true" ondragstart="app.dragStart(event, '${r.s.id}')" class="h-full ${colorClass} border-l-4 rounded shadow-sm text-[10px] px-1 cursor-grab hover:shadow-md overflow-hidden flex items-center justify-between group relative border border-gray-200 z-10 hover:z-20"><div class="flex items-center gap-1 w-[calc(100%-16px)] overflow-hidden flex-nowrap"><span class="font-bold whitespace-nowrap text-[10px]">${sub.code}-${sub.sec}</span>:<span class="truncate text-[10px] font-bold" title="${sub.name}">${sub.name}</span><span class="opacity-75 font-normal whitespace-nowrap text-[9px] ml-1">| ${roomName} | ${profName}</span></div><button onclick="event.stopPropagation(); app.unassign('${r.s.id}')" class="text-gray-400 hover:text-red-600 hidden group-hover:block px-1 z-30 cursor-pointer absolute right-1 bg-white rounded-full w-4 h-4 flex items-center justify-center shadow"><i class="fas fa-times"></i></button></div></div>`;
+                    }).join('')}</div></div>`;
+                });
+                safeSetHTML('calendar-grid', html);
+            }
+
+            // ACTIONS
+            function dragStart(ev, id) { dragSrc = id; ev.dataTransfer.setData("text/plain", id); }
+            function drop(ev, slotId) {
+                ev.preventDefault();
+                const s = db.sessions.find(x => x.id === dragSrc); if(!s) return;
+                const [day, startStr] = slotId.split('_'); const start = parseInt(startStr);
+                if(start + s.hours > 14) { showToast('เกินเวลาทำการ (22:30)', 'error'); return; }
+                const sub = db.subjects.find(x => x.id === s.subjId);
+                if (sub.isFixed) { showToast('วิชานี้ Lock เวลาไว้แล้ว', 'error'); return; }
+                
+                let deptWarn = false;
+                for(let k=0; k<s.hours; k++) { const lvl = db.settings.deptConstraints[`${day}_${start+k}`]; if(lvl === 2) deptWarn = true; }
+                if(deptWarn) showToast('คำเตือน: ติดช่วงเวลาห้ามลงของภาควิชา', 'error');
+
+                const busyProf = sub.instructors.find(inst => { const p = db.profs.find(prof => prof.id === inst.id); for(let i=0; i<s.hours; i++) if(p.busy.includes(`${day}_${start + i}`)) return true; return false; });
+                if(busyProf) { showToast(`อาจารย์ติดภารกิจส่วนตัว`, 'error'); return; }
+                
+                const subYears = Array.isArray(sub.year) ? sub.year : [sub.year];
+    const totalStudents = subYears.reduce((sum, yId) => {
+        return sum + (db.years.find(y => y.id === yId)?.count || 0);
+    }, 0);
+    
+    pendingDrop = { slotId, sessId: s.id, day, start, duration: s.hours, neededCap: totalStudents };
+    openRoomSelectModal();
+}
+
+            function openRoomSelectModal() {
+                const list = document.getElementById('room-list-options'); 
+                const { day, startIdx, duration, neededCap } = pendingDrop; 
+                
+                const availableRooms = db.rooms.filter(r => { 
+                    if(!db.settings.checkRoom) return true;
+                    if(r.cap < neededCap) return false;
+                    for(let i=0; i<duration; i++) {
+                        const occupied = db.sessions.find(s => s.assigned && s.assigned.room === r.id && s.id !== pendingDrop.sessId && s.assigned.slot.startsWith(day) && parseInt(s.assigned.slot.split('_')[1]) <= (startIdx+i) && parseInt(s.assigned.slot.split('_')[1]) + s.hours > (startIdx+i)); 
+                    if(occupied) return false; 
+                } 
+                return true; 
+            });
+            if(availableRooms.length === 0) list.innerHTML = `<div class="p-4 text-center text-red-500 font-bold">ไม่มีห้องว่าง</div>`; else list.innerHTML = availableRooms.map(r => `<div onclick="app.confirmRoom('${r.id}')" class="p-3 bg-white border mb-2 rounded cursor-pointer hover:border-kmutt-orange hover:shadow-md transition group"><div class="flex justify-between font-bold text-gray-700 group-hover:text-kmutt-orange"><span>${r.name}</span><span class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-500">Cap: ${r.cap}</span></div></div>`).join(''); document.getElementById('modal-select-room').classList.add('active');
+            }
+            function confirmRoom(roomId) { const s = db.sessions.find(x => x.id === pendingDrop.sessId); s.assigned = { slot: pendingDrop.slotId, room: roomId }; closeModal('modal-select-room'); checkConflict(s); renderAll(); }
+            
+            function checkConflict(s) { 
+    const sub = db.subjects.find(x => x.id === s.subjId); 
+    const start = parseInt(s.assigned.slot.split('_')[1]); 
+    const day = s.assigned.slot.split('_')[0]; 
+    let conflictMsg = null; 
+    
+    const sameRoomTime = db.sessions.filter(o => o.assigned && o.assigned.room === s.assigned.room && o.assigned.slot.startsWith(day) && !(parseInt(o.assigned.slot.split('_')[1]) >= start + s.hours || parseInt(o.assigned.slot.split('_')[1]) + o.hours <= start));
+    
+    let totalStudents = 0; 
+    let isMerged = true; 
+    const firstSub = sub;
+    
+    // เช็คความจุห้อง (รวมทุกกลุ่มเรียน)
+    sameRoomTime.forEach(o => {
+        const oSub = db.subjects.find(x=>x.id===o.subjId);
+        const sameProfs = firstSub.instructors.every(i => oSub.instructors.some(oi => oi.id === i.id));
+        if (oSub.code !== firstSub.code || !sameProfs) isMerged = false;
+        
+        // รวมจำนวนนักเรียนจากทุก Year ใน Array ของวิชานั้นๆ
+        const oYears = Array.isArray(oSub.year) ? oSub.year : [oSub.year];
+        oYears.forEach(yId => {
+             totalStudents += db.years.find(y=>y.id===yId)?.count || 0;
+        });
+    });
+    
+    if (isMerged && sameRoomTime.length > 0) { 
+         // เช็คความจุห้อง (เฉพาะเมื่อเปิด Check Room)
+         if (db.settings.checkRoom) {
+             const room = db.rooms.find(r=>r.id===s.assigned.room); 
+             if (totalStudents > room.cap) conflictMsg = `ความจุห้องไม่พอ (${totalStudents}/${room.cap})`; 
+         }
+    } 
+    else {
+        db.sessions.forEach(o => {
+            if(o.id === s.id || !o.assigned || !o.assigned.slot.startsWith(day)) return;
+            const oStart = parseInt(o.assigned.slot.split('_')[1]);
+            
+            if(start < oStart + o.hours && start + s.hours > oStart) {
+                // 1. เช็คห้องซ้ำ (เฉพาะเมื่อเปิด Check Room)
+                if (db.settings.checkRoom) {
+                    if(o.assigned.room === s.assigned.room) conflictMsg = `ห้อง ${db.rooms.find(r=>r.id===s.assigned.room).name} ไม่ว่าง`;
+                }
+                
+                // 2. เช็คชั้นปีซ้อน (Cross check arrays)
+                const sYears = Array.isArray(sub.year) ? sub.year : [sub.year];
+                const oYears = Array.isArray(oSub.year) ? oSub.year : [oSub.year];
+                const hasCommonYear = sYears.some(y => oYears.includes(y)); // ถ้ามีปีซ้ำกันแม้แต่ปีเดียว = ชน
+                
+                if(hasCommonYear) conflictMsg = `นศ.บางกลุ่มเรียนซ้อน`;
+                
+                // 3. เช็คอาจารย์
+                if(sub.instructors.some(i=>oSub.instructors.some(oi=>oi.id===i.id))) conflictMsg = `อาจารย์ติดสอน`;
+            }
+        });
+    }
+    if(conflictMsg) showToast('พบข้อขัดแย้ง: ' + conflictMsg, 'error'); else showToast('ลงตารางเรียบร้อย', 'success'); 
+}
+
+
+            function cancelRoomSelect() { closeModal('modal-select-room'); pendingDrop = null; dragSrc = null; }
+            function unassign(id) { const s = db.sessions.find(x => x.id === id); if(s) { const sub = db.subjects.find(x=>x.id===s.subjId); if(sub.isFixed && !confirm('วิชานี้ Lock ไว้ ต้องการลบออกหรือไม่?')) return; s.assigned = null; renderAll(); } }
+            function resetSchedule() { showConfirm('ยืนยันล้างข้อมูลทั้งหมด?<br>ทุกรายวิชา (ยกเว้นวิชา Lock) จะถูกดึงกลับไปที่ Class Pool', () => { db.sessions.forEach(s => { const sub = db.subjects.find(x=>x.id===s.subjId); if (!sub.isFixed) s.assigned = null; }); renderAll(); showToast('ล้างข้อมูลเรียบร้อย', 'success'); }); }
+
+            function autoAssign() {
+                showConfirm('เริ่มจัดตารางอัตโนมัติสำหรับรายวิชาที่เหลือ?<br>(วิชาที่จัดตารางไปแล้วจะไม่ถูกย้าย)', () => {
+                    
+                    // 1. เลือกเฉพาะวิชาที่ยังไม่ได้จัดตาราง
+                    const allSessions = db.sessions.filter(s => !s.assigned);
+                    
+                    // 2. เรียงลำดับความสำคัญ (ชั่วโมงมาก -> คนเยอะ -> อาจารย์งานยุ่ง)
+                    allSessions.sort((a,b) => {
+                        if (b.hours !== a.hours) return b.hours - a.hours;
+                        
+                        const subA = db.subjects.find(x=>x.id===a.subjId);
+                        const subB = db.subjects.find(x=>x.id===b.subjId);
+                        
+                        // คำนวณจำนวนคน (รองรับ Array)
+                        const getCount = (sub) => {
+                            const years = Array.isArray(sub.year) ? sub.year : [sub.year];
+                            return years.reduce((sum, yId) => sum + (db.years.find(y => y.id === yId)?.count || 0), 0);
+                        };
+                        const countA = getCount(subA);
+                        const countB = getCount(subB);
+                        
+                        if (countB !== countA) return countB - countA;
+                        
+                        // ความยุ่งของอาจารย์
+                        const busyA = subA.instructors.reduce((acc, i) => acc + (db.profs.find(p=>p.id===i.id)?.busy.length || 0), 0);
+                        const busyB = subB.instructors.reduce((acc, i) => acc + (db.profs.find(p=>p.id===i.id)?.busy.length || 0), 0);
+                        return busyB - busyA;
+                    });
+
+                    let placedCount = 0;
+                    
+                    // 3. เริ่มวนลูปจัดตาราง
+                    allSessions.forEach(sess => {
+                        const sub = db.subjects.find(x=>x.id===sess.subjId);
+                        
+                        // คำนวณความจุที่ต้องการ (รวมทุกกลุ่มเรียน)
+                        const subYears = Array.isArray(sub.year) ? sub.year : [sub.year];
+                        const needed = subYears.reduce((sum, yId) => sum + (db.years.find(y => y.id === yId)?.count || 0), 0);
+
+                        // กรองห้องที่ว่างและจุพอ (ถ้า checkRoom = true)
+                        const validRooms = db.rooms.filter(r => {
+                            if (!db.settings.checkRoom) return true; // ถ้าปิด checkRoom ให้ใช้ได้ทุกห้อง
+                            return r.cap >= needed;
+                        }).sort((a,b) => a.cap - b.cap); // เรียงจากห้องเล็กไปใหญ่
+                        
+                        let placed = false;
+                        
+                        // วนหา วัน -> เวลา -> ห้อง
+                        for(let d of DAYS) {
+                            if(placed) break;
+                            for(let i=db.settings.startIdx; i <= db.settings.endIdx - sess.hours; i++) {
+                                if(placed) break;
+                                
+                                // 3.1 เช็คเวลาห้ามของภาควิชา
+                                let deptHard = false; 
+                                for(let k=0; k<sess.hours; k++) { 
+                                    if(db.settings.deptConstraints[`${d}_${i+k}`] === 2) deptHard=true; 
+                                }
+                                if(deptHard) continue;
+                                
+                                // 3.2 เช็คอาจารย์ไม่ว่าง
+                                const busyProf = sub.instructors.some(inst => { 
+                                    const p = db.profs.find(x=>x.id===inst.id); 
+                                    if(!p) return false; 
+                                    for(let k=0; k<sess.hours; k++) if(p.busy.includes(`${d}_${i+k}`)) return true; 
+                                });
+                                if(busyProf) continue;
+                                
+                                // 3.3 เช็คตารางชน (Conflict)
+                                let conflict = false;
+                                for(let k=0; k<sess.hours; k++) {
+                                    // หาวิชาอื่นที่เรียนในเวลาเดียวกันนี้
+                                    const overlapSessions = db.sessions.filter(o => o.assigned && o.assigned.slot.startsWith(d) && parseInt(o.assigned.slot.split('_')[1]) <= (i+k) && parseInt(o.assigned.slot.split('_')[1]) + o.hours > (i+k));
+                                    
+                                    for(let o of overlapSessions) {
+                                        const oSub = db.subjects.find(x=>x.id===o.subjId);
+                                        const isMerged = (sub.code === oSub.code && sub.sec !== oSub.sec); // วิชาเดียวกันคนละ Sec (อาจจะมองเป็น merge ได้ในบาง logic แต่ที่นี้เช็คแยก)
+                                        
+                                        if(!isMerged) { 
+                                            // เช็คว่ามีปีซ้ำกันไหม (Intersection of Arrays)
+                                            const oYears = Array.isArray(oSub.year) ? oSub.year : [oSub.year];
+                                            const hasCommonYear = subYears.some(y => oYears.includes(y));
+                                            if(hasCommonYear) conflict = true; 
+                                            
+                                            // เช็คอาจารย์ซ้ำ
+                                            if(sub.instructors.some(pi=>oSub.instructors.some(oi=>oi.id===pi.id))) conflict = true; 
+                                        }
+                                    }
+                                }
+                                if(conflict) continue;
+                                
+                                // 3.4 หาห้องว่างใน Valid Rooms
+                                for(let r of validRooms) {
+                                    let roomFree = true;
+                                    
+                                    // ถ้าเปิด Check Room ต้องเช็คว่าห้องว่างไหม
+                                    if (db.settings.checkRoom) {
+                                        for(let k=0; k<sess.hours; k++) {
+                                            const roomBusy = db.sessions.some(o => o.assigned && o.assigned.room === r.id && o.assigned.slot.startsWith(d) && parseInt(o.assigned.slot.split('_')[1]) <= (i+k) && parseInt(o.assigned.slot.split('_')[1]) + o.hours > (i+k));
+                                            if(roomBusy) { roomFree = false; break; }
+                                        }
+                                    }
+                                    
+                                    if(roomFree) { 
+                                        sess.assigned = { slot: `${d}_${i}`, room: r.id }; 
+                                        placed = true; 
+                                        placedCount++; 
+                                        break; 
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    renderAll(); 
+                    showToast(`จัดตารางเพิ่มสำเร็จ ${placedCount} รายการ`, 'success');
+                });
+            }
+
+            function renderProfList(selectedInsts) {
+                const sortedProfs = [...db.profs].sort((a,b) => {
+                    const selA = selectedInsts.some(i=>i.id===a.id);
+                    const selB = selectedInsts.some(i=>i.id===b.id);
+                    if (selA && !selB) return -1;
+                    if (!selA && selB) return 1;
+                    return 0;
+                });
+                safeSetHTML('subj-profs-list', sortedProfs.map(p => {
+                    const sel = selectedInsts.find(i=>i.id===p.id);
+                    const checked = !!sel;
+                    const val = sel ? sel.ratio : '';
+                    return `<div class="grid grid-cols-12 gap-2 px-3 py-2 items-center hover:bg-gray-50 border-b"><div class="col-span-1 text-center"><input type="checkbox" value="${p.id}" class="prof-check h-4 w-4 text-kmutt-orange" ${checked?'checked':''} onchange="app.handleProfCheck(this)"></div><div class="col-span-8 text-sm flex items-center">${p.fname} ${p.lname} <span class="text-xs text-gray-400 ml-1">(${p.prefix})</span></div><div class="col-span-3"><input type="number" data-pid="${p.id}" class="prof-ratio form-input py-1 px-1 text-center text-xs" value="${val}" ${!checked?'disabled':''} oninput="app.updateRatioTotal()"></div></div>`;
+                }).join(''));
+                updateRatioTotal();
+            }
+
+            function editSubject(id) {
+    // ... code ส่วนต้น (fixStart, fixRoom) คงเดิม ...
+    const fixStart = document.getElementById('fix-start'); fixStart.innerHTML = SLOTS.map(s=>`<option value="${s.id}">${s.label}</option>`).join('');
+    const fixRoom = document.getElementById('fix-room'); fixRoom.innerHTML = `<option value="">-- ไม่ระบุ --</option>` + db.rooms.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
+    
+    const s = id ? db.subjects.find(x => x.id === id) : null;
+    const currentInstructors = s ? s.instructors : [];
+    
+    // --- ส่วนจัดการ Checkbox ชั้นปี ---
+    const currentYears = s ? (Array.isArray(s.year) ? s.year : [s.year]) : [];
+    const yearHTML = db.years.map(y => {
+        const isChecked = currentYears.includes(y.id) ? 'checked' : '';
+        return `<label class="flex items-center space-x-2 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
+            <input type="checkbox" class="form-checkbox text-kmutt-orange year-check" value="${y.id}" ${isChecked}>
+            <span class="text-gray-700 font-bold">${y.id}</span>
+            <span class="text-xs text-gray-400">(${y.count})</span>
+        </label>`;
+    }).join('');
+    safeSetHTML('subj-year-container', yearHTML);
+    // --------------------------------
+
+    // ... code ส่วน Fix Day/Time คงเดิม ...
+    const fixDay = document.getElementById('fix-day');
+    fixDay.innerHTML = DAYS.map(d => `<option value="${d}">${d}</option>`).join('');
+    
+    document.getElementById('subj-id').value = s ? s.id : '';
+    document.getElementById('subj-code').value = s ? s.code : '';
+    document.getElementById('subj-sec').value = s ? s.sec : '1';
+    document.getElementById('subj-name').value = s ? s.name : '';
+    document.getElementById('subj-credit').value = s ? s.credit : 3;
+    document.getElementById('subj-workload').value = s ? s.workload : 3;
+    document.getElementById('subj-split').value = s ? s.splitPattern.join(',') : '3';
+    
+    // ลบการ set value ของ select เดิมออก (เพราะเราใช้ checkbox แล้ว)
+    // yearSel.value = ... (ลบทิ้ง)
+
+    document.getElementById('subj-fixed').checked = s ? s.isFixed : false;
+    toggleFixedMode();
+    if(s && s.isFixed && s.fixData) { document.getElementById('fix-day').value = s.fixData.day; document.getElementById('fix-start').value = s.fixData.start; document.getElementById('fix-room').value = s.fixData.room || ''; }
+    
+    renderProfList(currentInstructors);
+    document.getElementById('btn-del-subj').classList.toggle('hidden', !s);
+    document.getElementById('modal-subject').classList.add('active');
+}
+
+            function saveSubject() {
+    const id = document.getElementById('subj-id').value;
+    
+    // ... ส่วนเก็บ Instructors คงเดิม ...
+    const isFixed = document.getElementById('subj-fixed').checked;
+    const insts = [];
+    let total = 0;
+    document.querySelectorAll('.prof-check:checked').forEach(cb => {
+        const v = parseFloat(document.querySelector(`.prof-ratio[data-pid="${cb.value}"]`).value)||0;
+        insts.push({id: cb.value, ratio: v});
+        total += v;
+    });
+    if(!isFixed && insts.length > 0 && Math.abs(total-100) > 0.1) return showToast("สัดส่วนต้องรวมได้ 100%", 'error');
+    
+    // --- ส่วนเก็บ Years (จาก Checkbox) ---
+    const selectedYears = [];
+    document.querySelectorAll('.year-check:checked').forEach(cb => {
+        selectedYears.push(cb.value);
+    });
+    if(selectedYears.length === 0) return showToast("กรุณาเลือกชั้นปีอย่างน้อย 1 กลุ่ม", 'error');
+    // ----------------------------------
+
+    const pat = document.getElementById('subj-split').value.split(',').map(n=>parseInt(n.trim())).filter(n=>!isNaN(n));
+    
+    // สร้าง Object ใหม่ (year เป็น Array แล้ว)
+    const newData = {
+        id: id || 'S'+Date.now(), code: document.getElementById('subj-code').value, sec: document.getElementById('subj-sec').value,
+        name: document.getElementById('subj-name').value, credit: parseInt(document.getElementById('subj-credit').value),
+        workload: parseFloat(document.getElementById('subj-workload').value)||0, splitPattern: pat.length?pat:[3],
+        year: selectedYears, // เก็บเป็น Array
+        instructors: insts, isFixed: isFixed
+    };
+    
+    // เพิ่ม fixData ถ้ามี
+    if(isFixed) {
+        newData.fixData = {
+            day: document.getElementById('fix-day').value,
+            start: parseInt(document.getElementById('fix-start').value),
+            room: document.getElementById('fix-room').value
+        };
+    } else {
+        newData.fixData = null;
+    }
+
+    if(id) db.subjects[db.subjects.findIndex(x=>x.id===id)] = newData; else db.subjects.push(newData);
+    syncSessions(); renderAll(); closeModal('modal-subject');
+}
+
+        
+            function deleteSubject() { showConfirm('ยืนยันลบรายวิชานี้?', () => { db.subjects = db.subjects.filter(x=>x.id !== document.getElementById('subj-id').value); syncSessions(); renderAll(); closeModal('modal-subject'); }); }
+
+            function editProf(id) {
+                document.getElementById('prof-id').value = id||'';
+                if(id) {
+                    const p = db.profs.find(x=>x.id===id);
+                    document.getElementById('prof-prefix').value = p.prefix;
+                    document.getElementById('prof-fname').value = p.fname;
+                    document.getElementById('prof-lname').value = p.lname;
+                    document.getElementById('prof-tel').value = p.tel;
+                    document.getElementById('prof-email').value = p.email || '';
+                    document.getElementById('prof-field').value = p.field || '';
+                } else {
+                    document.getElementById('prof-id').value = '';
+                    document.getElementById('prof-prefix').value = 'อาจารย์';
+                    document.getElementById('prof-fname').value = '';
+                    document.getElementById('prof-lname').value = '';
+                    document.getElementById('prof-tel').value = '';
+                    document.getElementById('prof-email').value = '';
+                    document.getElementById('prof-field').value = '';
+                }
+                const grid = document.getElementById('avail-grid');
+                const pid = document.getElementById('prof-id').value;
+                const p = pid ? db.profs.find(x=>x.id===pid) : {busy:[]};
+                let h = `<div class="grid grid-cols-[60px_repeat(14,1fr)] gap-1 text-[10px]"><div class="text-center font-bold text-gray-400">Day</div>`;
+                SLOTS.forEach(s => h += `<div class="text-center text-gray-400 font-bold">${s.label}</div>`);
+                DAYS.forEach((d, di) => {
+                    h += `<div class="flex items-center justify-center font-bold text-gray-500">${d}</div>`;
+                    SLOTS.forEach((s, si) => {
+                        const sid = `${d}_${si}`;
+                        const isBusy = p.busy.includes(sid);
+                        const deptLvl = db.settings.deptConstraints[sid] || 0; 
+                        const deptClass = deptLvl===2?'dept-hard':(deptLvl===1?'dept-soft':''); 
+                        h+=`<div onclick="app.toggleAvailability(this,'${sid}')" class="avail-slot h-8 border rounded flex items-center justify-center ${deptClass || (isBusy?'busy':'')} ${deptLvl>0?'opacity-50':''}"></div>`;
+                    });
+                });
+                h += `</div>`;
+                grid.innerHTML = h;
+                document.getElementById('modal-prof').classList.add('active');
+            }
+            function toggleAvailability(el, sid) { el.classList.toggle('busy'); }
+            function saveProf() {
+                const id = document.getElementById('prof-id').value;
+                const busySlots = [];
+                document.querySelectorAll('#avail-grid .avail-slot.busy').forEach(el => {
+                    const sidMatch = el.getAttribute('onclick').match(/'([^']+)'/);
+                    if (sidMatch && sidMatch[1]) {
+                        busySlots.push(sidMatch[1]);
+                    }
+                });
+                const nd = {
+                    id: id || 'P'+Date.now(), prefix: document.getElementById('prof-prefix').value,
+                    fname: document.getElementById('prof-fname').value, lname: document.getElementById('prof-lname').value,
+                    tel: document.getElementById('prof-tel').value, email: document.getElementById('prof-email').value, field: document.getElementById('prof-field').value, busy: busySlots
+                };
+                if(id) db.profs[db.profs.findIndex(x=>x.id===id)] = nd; else db.profs.push(nd);
+                renderAll(); closeModal('modal-prof');
+            }
+            function deleteProf() { 
+                const id = document.getElementById('prof-id').value;
+                if(db.subjects.some(s=>s.instructors.some(i=>i.id===id))) return showToast('ลบไม่ได้ มีสอนอยู่', 'error');
+                showConfirm('ยืนยันลบอาจารย์ท่านนี้?', ()=>{ db.profs=db.profs.filter(x=>x.id!==id); renderAll(); closeModal('modal-prof'); });
+            }
+
+            function editYear(id) { openSimple('Y', id); }
+            function editRoom(id) { openSimple('R', id); }
+            function openSimple(type, id) {
+                document.getElementById('simple-edit-type').value = type;
+                document.getElementById('simple-edit-id').value = id || '';
+                const d = id ? (type==='Y'?db.years.find(x=>x.id===id):db.rooms.find(x=>x.id===id)) : null;
+                document.getElementById('simple-edit-code').value = d?d.id:'';
+                document.getElementById('simple-edit-name').value = d?d.name:'';
+                document.getElementById('simple-edit-cap').value = d?(d.count||d.cap):'';
+                
+                // 3. Remove room schedule view from this modal
+                document.getElementById('room-schedule-view').classList.add('hidden');
+                
+                document.getElementById('modal-simple-edit').classList.add('active');
+            }
+            function saveSimpleEdit() {
+                const t = document.getElementById('simple-edit-type').value;
+                const oid = document.getElementById('simple-edit-id').value;
+                const nid = document.getElementById('simple-edit-code').value;
+                const name = document.getElementById('simple-edit-name').value;
+                const num = parseInt(document.getElementById('simple-edit-cap').value);
+                const list = t==='Y'?db.years:db.rooms;
+                const nd = t==='Y'?{id:nid, name, count:num}:{id:nid, name, cap:num};
+                if(oid) list[list.findIndex(x=>x.id===oid)]=nd; else list.push(nd);
+                renderAll(); closeModal('modal-simple-edit');
+            }
+            function deleteSimpleItem() {
+                const t = document.getElementById('simple-edit-type').value;
+                const id = document.getElementById('simple-edit-id').value;
+                if(t==='Y') db.years = db.years.filter(x=>x.id!==id); else db.rooms = db.rooms.filter(x=>x.id!==id);
+                renderAll(); closeModal('modal-simple-edit');
+            }
+
+            function renderReport() {
+                const filter = document.getElementById('report-filter').value;
+                const container = document.getElementById('workload-summary-container');
+                let profs = db.profs;
+                const isAll = filter === 'ALL' || filter.startsWith('FIELD');
+                if(filter.startsWith('FIELD')) { const f = filter.split(':')[1]; profs = profs.filter(p => p.field === f); } else if(filter !== 'ALL') { profs = profs.filter(p => p.id === filter); }
+
+                container.innerHTML = profs.map(p => {
+                    const teaching = db.subjects.filter(s => s.instructors.some(i => i.id === p.id));
+                    if(teaching.length === 0 && filter === 'ALL') return '';
+                    let totalWorkload = 0;
+                    const rows = teaching.map(s => {
+                        const instData = s.instructors.find(i => i.id === p.id);
+                        const load = (s.workload || s.credit) * (instData.ratio / 100);
+                        totalWorkload += load;
+                        return `<tr class="border-b"><td class="p-2 border">${s.code} (Sec ${s.sec})</td><td class="p-2 border">${s.name}</td><td class="p-2 border text-center">${s.credit}</td><td class="p-2 border text-center text-gray-800">${s.workload || s.credit}</td><td class="p-2 border text-center">${instData.ratio}%</td><td class="p-2 border text-center font-bold text-blue-600">${load.toFixed(2)}</td></tr>`;
+                    }).join('');
+                    
+                    let scheduleHtml = '';
+                    if (!isAll) {
+                        scheduleHtml += `<div class="mt-4"><div class="border rounded text-xs"><div class="grid grid-cols-[50px_repeat(14,1fr)] bg-gray-100 border-b font-bold text-center"><div class="p-1">Day</div>${SLOTS.map(s=>`<div class="p-1 border-l">${s.label}</div>`).join('')}</div>`;
+                        DAYS.forEach(day => {
+                            scheduleHtml += `<div class="grid grid-cols-[50px_repeat(14,1fr)] border-b h-10 relative"><div class="p-1 font-bold text-gray-500 text-center flex items-center justify-center bg-gray-50">${day}</div>${SLOTS.map((_, i) => `<div class="border-l"></div>`).join('')}`;
+                            const pSessions = db.sessions.filter(s => s.assigned && s.assigned.slot.startsWith(day) && db.subjects.find(sub => sub.id === s.subjId).instructors.some(i => i.id === p.id));
+                            pSessions.forEach(s => {
+                                const start = parseInt(s.assigned.slot.split('_')[1]);
+                                const sub = db.subjects.find(x => x.id === s.subjId);
+                                const room = db.rooms.find(r => r.id === s.assigned.room)?.name || '?';
+                                scheduleHtml += `<div class="absolute bg-blue-100 border-l-2 border-blue-600 text-[9px] p-1 overflow-hidden leading-tight" style="left: calc(50px + ${(start * (100/14))} * (100% - 50px) / 100); width: calc(${s.hours} * (100% - 50px) / 14); top: 1px; bottom: 1px;"><div class="font-bold truncate text-[10px]"><span class="font-mono">${sub.code}-${sub.sec}</span> ${sub.name}</div><div class="truncate text-[9px] text-gray-500">${room}</div></div>`;
+                            });
+                            scheduleHtml += `</div>`;
+                        });
+                        scheduleHtml += `</div></div>`;
+                    }
+                    return `<div class="bg-white rounded border overflow-hidden break-inside-avoid mb-6 p-4 shadow-sm"><div class="flex justify-between items-center mb-3 border-b pb-2"><h4 class="font-bold text-lg text-gray-800">${p.fname} ${p.lname} <span class="text-sm font-normal text-gray-500">(${p.prefix})</span></h4><span class="text-sm font-bold bg-blue-100 text-blue-800 px-3 py-1 rounded-full">รวมภาระงาน: ${totalWorkload.toFixed(2)} ชม./สัปดาห์</span></div><table class="w-full text-sm mb-2 table-fixed"><thead class="bg-gray-50 text-gray-500"><tr><th class="p-2 border text-left w-32">Code</th><th class="p-2 border text-left w-auto">Subject</th><th class="p-2 border text-center w-16">Credit</th><th class="p-2 border text-center w-20">Full Load</th><th class="p-2 border text-center w-20">Ratio</th><th class="p-2 border text-center w-20">Net Load</th></tr></thead><tbody>${rows || '<tr><td colspan="6" class="text-center p-2 text-gray-400">No subjects assigned</td></tr>'}</tbody></table>${scheduleHtml}</div>`;
+                }).join('');
+            }
+
+            function renderRoomReport() {
+                const container = document.getElementById('room-report-container');
+                container.innerHTML = db.rooms.map(r => {
+                    const sessions = db.sessions.filter(s => s.assigned && s.assigned.room === r.id);
+                    let scheduleHtml = `<div class="border rounded text-xs mt-2"><div class="grid grid-cols-[60px_repeat(14,1fr)] bg-gray-100 text-[10px] text-center"><div class="p-1 text-[10px] font-bold">Day</div>${SLOTS.map(s=>`<div class="p-1 border-l">${s.label}</div>`).join('')}</div>`;
+                    DAYS.forEach(day => {
+                        scheduleHtml += `<div class="grid grid-cols-[60px_repeat(14,1fr)] border-b h-10 relative"><div class="p-1 font-bold text-gray-500 text-center flex items-center justify-center text-[10px] bg-gray-50">${day}</div>${SLOTS.map((_, i) => `<div class="border-l"></div>`).join('')}`;
+                        const rSessions = sessions.filter(s => s.assigned.slot.startsWith(day));
+                        rSessions.forEach(s => {
+                            const start = parseInt(s.assigned.slot.split('_')[1]);
+                            const sub = db.subjects.find(x => x.id === s.subjId);
+                            const p = sub.instructors.length > 0 ? db.profs.find(p=>p.id===sub.instructors[0].id) : {};
+                            const pName = p.fname || '?';
+                            scheduleHtml += `<div class="absolute bg-green-100 border-l-2 border-green-600 text-[9px] p-1 overflow-hidden leading-tight" style="left: calc(50px + ${(start * (100/14))} * (100% - 50px) / 100); width: calc(${s.hours} * (100% - 50px) / 14); top: 1px; bottom: 1px;"><div class="font-bold truncate text-[10px]">${sub.code}-${sub.sec} ${sub.name}</div><div class="truncate text-[8px] text-gray-600">${p.prefix || ''} ${pName}</div></div>`;
+                        });
+                        scheduleHtml += `</div>`;
+                    });
+                    scheduleHtml += `</div>`;
+                    return `<div class="bg-white rounded border overflow-hidden break-inside-avoid mb-6 p-4 shadow-sm"><h4 class="font-bold text-lg text-green-800 mb-2">${r.name} <span class="text-sm text-gray-500">(${r.cap} seats)</span></h4>${scheduleHtml}</div>`;
+                }).join('');
+            }
+            
+            return { init: init, switchTab: switchTab, renderCalendar: renderCalendar, resetSchedule: resetSchedule, autoAssign: autoAssign, editSubject: editSubject, saveSubject: saveSubject, deleteSubject: deleteSubject, handleProfCheck: handleProfCheck, updateRatioTotal: updateRatioTotal, editProf: editProf, saveProf: saveProf, deleteProf: deleteProf, toggleAvailability: toggleAvailability, toggleDeptBusy: toggleDeptBusy, saveSettings: saveSettings, openSettings: openSettings, editYear: editYear, editRoom: editRoom, saveSimpleEdit: saveSimpleEdit, deleteSimpleItem: deleteSimpleItem, closeModal: closeModal, dragStart: dragStart, drop: drop, unassign: unassign, confirmRoom: confirmRoom, cancelRoomSelect: cancelRoomSelect, renderReport: renderReport, hideToast: hideToast, showConfirm: showConfirm, processConfirm: processConfirm, toggleFixedMode: toggleFixedMode, saveAcadYear: saveAcadYear, renderRoomReport: renderRoomReport };
+        })();
+        window.onload = app.init;
+    </script>
+</body>
+</html>

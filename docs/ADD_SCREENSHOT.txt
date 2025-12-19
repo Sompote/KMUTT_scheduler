@@ -1,0 +1,32 @@
+╔══════════════════════════════════════════════════════════════╗
+║          📸 Screenshot Addition Instructions                 ║
+╚══════════════════════════════════════════════════════════════╝
+
+To complete the README documentation:
+
+1. Save the scheduler screenshot image as:
+   docs/images/scheduler-screenshot.png
+
+2. The README.md (line 5) already references this image:
+   ![KMUTT Scheduler Screenshot](./docs/images/scheduler-screenshot.png)
+
+3. Recommended screenshot content:
+   ✅ Full scheduler interface with calendar grid
+   ✅ Class pool sidebar showing unscheduled sessions  
+   ✅ Multiple scheduled sessions (different colors)
+   ✅ KMUTT branding visible
+   ✅ Thai language interface
+   ✅ Weekly view (MON-SUN, 14 time slots)
+
+4. Image specifications:
+   • Format: PNG or JPEG
+   • Resolution: Minimum 1920x1080
+   • File size: Under 2MB
+   • Aspect ratio: 16:9 or wider
+
+Once added, the screenshot will automatically appear at the top
+of README.md when viewed on GitHub or locally.
+
+Current location to add image:
+→ /Users/sompoteyouwai/env1/time_shcedule/docs/images/scheduler-screenshot.png
+

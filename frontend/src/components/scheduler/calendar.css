@@ -1,0 +1,54 @@
+/* Calendar Grid Styles - Cloned from original Scheduler.html */
+
+.calendar-row {
+  display: flex;
+  border-bottom: 1px solid #E5E7EB;
+  min-height: 80px;
+  transition: height 0.2s;
+}
+
+.day-header {
+  width: 80px;
+  flex-shrink: 0;
+  background-color: #F3F4F6;
+  border-right: 1px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #6B7280;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+.slots-container {
+  flex-grow: 1;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  min-width: 1120px;
+}
+
+.slot-col {
+  border-right: 1px solid #E5E7EB;
+  height: 100%;
+}
+
+.drop-zone {
+  height: 100%;
+}
+
+.drop-zone:hover {
+  background-color: #EFF6FF;
+}
+
+.draggable-item {
+  cursor: grab;
+  user-select: none;
+  transition: all 0.1s;
+}
+
+.draggable-item:active {
+  cursor: grabbing;
+  transform: scale(1.02);
+}
