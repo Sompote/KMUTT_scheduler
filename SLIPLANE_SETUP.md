@@ -25,13 +25,13 @@ BACKEND_URL
 
 **Variable Value:**
 ```
-kmutt-scheduler-ug1t3q.sliplane.app
+https://kmutt-scheduler-ug1t3q.sliplane.app
 ```
 
 ⚠️ **Important Notes:**
-- Do NOT include `https://` in the value
-- Do NOT include `/api` in the value
-- The entrypoint script automatically handles these
+- **INCLUDE** `https://` for cloud deployments
+- Do NOT include `/api` in the value (nginx location block handles this)
+- For local Docker Compose, you can use `http://backend:3000` or just `backend:3000`
 
 ### Step 3: Redeploy
 After adding the environment variable:
@@ -42,7 +42,7 @@ After adding the environment variable:
 ### Step 4: Verify Deployment
 Check the runtime logs. You should see:
 ```
-🔧 Configuring backend URL: kmutt-scheduler-ug1t3q.sliplane.app
+🔧 Configuring backend URL: https://kmutt-scheduler-ug1t3q.sliplane.app
 ✅ Nginx configuration updated
 ```
 
@@ -52,14 +52,15 @@ And nginx should start successfully without the "host not found" error.
 
 The `docker-entrypoint.sh` script:
 1. Reads the `BACKEND_URL` environment variable
-2. Defaults to `backend:3000` if not set (for local Docker Compose)
-3. Strips `http://` or `https://` prefix (nginx adds it)
-4. Replaces `BACKEND_URL_PLACEHOLDER` in nginx config
-5. Starts nginx
+2. Defaults to `http://backend:3000` if not set (for local Docker Compose)
+3. Detects if URL includes protocol (`http://` or `https://`)
+4. If no protocol, adds `http://` automatically
+5. Replaces `BACKEND_URL_PLACEHOLDER` in nginx config with full URL
+6. Starts nginx
 
 Your nginx configuration then proxies all `/api/*` requests to:
 ```
-http://kmutt-scheduler-ug1t3q.sliplane.app/api/*
+https://kmutt-scheduler-ug1t3q.sliplane.app/api/*
 ```
 
 ## Testing After Deployment
