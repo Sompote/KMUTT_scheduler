@@ -1,6 +1,11 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// For cloud deployment, use direct backend URL
+// For local development, use proxy
+const API_BASE_URL = import.meta.env.VITE_API_URL ||
+  (window.location.hostname === 'localhost'
+    ? '/api'
+    : 'https://kmutt-scheduler-ug1t3q.sliplane.app/api');
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
