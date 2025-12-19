@@ -16,6 +16,9 @@ COPY . .
 # Build TypeScript
 RUN npm run build
 
+# Copy SQL schema file to dist (TypeScript doesn't copy non-TS files)
+RUN cp src/database/schema.sql dist/database/schema.sql
+
 # Remove dev dependencies to reduce image size
 RUN npm prune --production
 
