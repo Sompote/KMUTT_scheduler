@@ -12,6 +12,7 @@ dotenv.config();
 import db from './database/connection';
 
 // Import routes
+import authRouter from './routes/auth';
 import yearsRouter from './routes/years';
 import roomsRouter from './routes/rooms';
 import instructorsRouter from './routes/instructors';
@@ -39,6 +40,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 });
 
 // API routes
+app.use('/api/auth', authRouter);
 app.use('/api/years', yearsRouter);
 app.use('/api/rooms', roomsRouter);
 app.use('/api/instructors', instructorsRouter);

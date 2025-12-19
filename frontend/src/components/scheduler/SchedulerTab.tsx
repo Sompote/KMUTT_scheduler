@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { CalendarGrid } from './CalendarGrid';
 import { ClassPool } from './ClassPool';
 import { RoomSelectModal } from './RoomSelectModal';
-import { useSessions, useSyncSessions, useAutoAssign, useUpdateSession, useSubjects, useYears, useDeptConstraints, useSettings, useInstructors } from '../../hooks/useData';
+import { useSessions, useSyncSessions, useAutoAssign, useUpdateSession, useSubjects, useDeptConstraints, useSettings, useInstructors } from '../../hooks/useData';
 
 export function SchedulerTab() {
   const [filter, setFilter] = useState('ALL');
-  const [draggedSessionId, setDraggedSessionId] = useState<string | null>(null);
   const [pendingDrop, setPendingDrop] = useState<{
     sessionId: string;
     day: string;
@@ -15,7 +14,6 @@ export function SchedulerTab() {
 
   const { data: sessions = [] } = useSessions();
   const { data: subjects = [] } = useSubjects();
-  const { data: years = [] } = useYears();
   const { data: deptConstraints = [] } = useDeptConstraints();
   const { data: settings } = useSettings();
   const { data: instructors = [] } = useInstructors();
@@ -182,7 +180,7 @@ export function SchedulerTab() {
             </span>
           </div>
           <div className="flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-gray-50/50">
-            <ClassPool onDragStart={setDraggedSessionId} />
+            <ClassPool onDragStart={() => {}} />
           </div>
         </div>
 

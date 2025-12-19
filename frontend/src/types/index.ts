@@ -30,6 +30,11 @@ export interface Instructor {
   email?: string;
   field?: string;
   busy?: BusySlot[];
+  availability?: {
+    [day: string]: {
+      [slot: number]: boolean;
+    };
+  };
   created_at?: string;
   updated_at?: string;
 }
@@ -73,8 +78,10 @@ export interface Session {
 export interface DepartmentConstraint {
   id?: number;
   day: string;
-  slot: number;
-  constraint_type: 'hard' | 'soft';
+  slot?: number;
+  constraint_type?: 'hard' | 'soft';
+  hard_blocked?: number[];
+  soft_blocked?: number[];
   created_at?: string;
 }
 
@@ -84,6 +91,8 @@ export interface Settings {
   work_end: number;
   max_continuous_hours: number;
   check_room_constraints: number;
+  check_dept_constraints?: number;
+  check_instructor_constraints?: number;
   updated_at?: string;
 }
 

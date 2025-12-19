@@ -8,6 +8,7 @@ A modern full-stack class scheduling application for KMUTT's Civil Engineering D
 
 This application helps manage class schedules for the Civil Engineering Department at King Mongkut's University of Technology Thonburi (KMUTT). It provides:
 
+- **User Authentication**: Secure login system with role-based access control
 - **Data Management**: Manage years, rooms, instructors, and subjects
 - **Interactive Scheduler**: Drag-and-drop interface for scheduling classes
 - **Auto-Assignment**: Intelligent algorithm to automatically schedule classes
@@ -18,6 +19,8 @@ This application helps manage class schedules for the Civil Engineering Departme
 ## ✨ Features
 
 ### Core Functionality
+✅ **User Authentication** - Login page with session management
+✅ **Role-Based Access** - Admin and teacher user roles
 ✅ **Drag & Drop Scheduling** - Intuitive HTML5 drag-and-drop interface
 ✅ **Auto-Assign Algorithm** - Priority-based automatic scheduling
 ✅ **Real-time Conflict Detection** - Prevents instructor, room, and student conflicts
@@ -30,6 +33,8 @@ This application helps manage class schedules for the Civil Engineering Departme
 ✅ Full TypeScript implementation (Frontend + Backend)
 ✅ RESTful API with comprehensive CRUD operations
 ✅ React 18 with TanStack Query for state management
+✅ React Router with protected routes
+✅ Authentication with React Context API
 ✅ SQLite database with persistent storage
 ✅ Docker & Docker Compose deployment
 ✅ Automated backup scripts
@@ -67,9 +72,13 @@ The script will:
 - ✅ Display access URLs
 
 #### Step 3: Access the Application
-- **Frontend**: http://localhost
+- **Frontend**: http://localhost (Login page)
 - **Backend API**: http://localhost:3000
 - **Health Check**: http://localhost:3000/api/health
+
+**Default Login Credentials:**
+- **Admin**: Username `admin` / Password `admin123`
+- **Teacher**: Username `teacher` / Password `teacher123`
 
 #### Manual Docker Deployment (Alternative)
 ```bash
@@ -156,6 +165,10 @@ npm run dev
 
 Open your browser: `http://localhost:5173`
 
+**Default Login Credentials:**
+- **Admin**: Username `admin` / Password `admin123`
+- **Teacher**: Username `teacher` / Password `teacher123`
+
 #### Development Commands
 
 **Backend:**
@@ -238,6 +251,7 @@ time_shcedule/
 │   │   │   ├── seed.ts         # Sample data
 │   │   │   └── connection.ts   # SQLite connection
 │   │   ├── routes/             # API route handlers
+│   │   │   ├── auth.ts         # Authentication & login
 │   │   │   ├── years.ts        # Year management
 │   │   │   ├── rooms.ts        # Room management
 │   │   │   ├── instructors.ts  # Instructor management
@@ -254,12 +268,16 @@ time_shcedule/
 │   ├── src/
 │   │   ├── api/                # API client
 │   │   ├── components/         # React components
+│   │   │   ├── auth/          # Login & authentication
 │   │   │   ├── data/          # Data management UI
+│   │   │   ├── layout/        # Main app layout
 │   │   │   ├── scheduler/     # Scheduler interface
-│   │   │   └── reports/       # Report generation
+│   │   │   ├── reports/       # Report generation
+│   │   │   └── common/        # Shared components
+│   │   ├── contexts/          # React contexts (AuthContext)
 │   │   ├── hooks/             # Custom React hooks
 │   │   ├── types/             # TypeScript types
-│   │   ├── App.tsx            # Main app component
+│   │   ├── App.tsx            # Main app with routing
 │   │   └── main.tsx           # Entry point
 │   ├── Dockerfile             # Frontend multi-stage build
 │   ├── nginx.conf             # Nginx configuration
@@ -273,6 +291,7 @@ time_shcedule/
 ├── deploy.sh                  # Automated deployment script
 ├── backup.sh                  # Database backup script
 ├── DEPLOYMENT.md              # Detailed deployment guide
+├── LOGIN_FEATURE.md           # Login feature documentation
 ├── .env.example              # Environment variables template
 ├── Scheduler.html            # Original HTML version (reference)
 └── README.md                 # This file
@@ -305,6 +324,13 @@ time_shcedule/
 - `key`, `value` (JSON) - Settings, constraints, academic year
 
 ## 🔌 API Endpoints
+
+### Authentication
+```
+POST   /api/auth/login      # User login with credentials
+GET    /api/auth/verify     # Verify authentication token
+POST   /api/auth/logout     # User logout
+```
 
 ### Years Management
 ```
@@ -363,6 +389,61 @@ PUT    /api/config/dept-constraints   # Update constraints
 GET    /health              # Backend health check
 GET    /api/health          # Alternative health endpoint
 ```
+
+## 🔐 Authentication System
+
+The application includes a complete authentication system with a login page and protected routes.
+
+### Features
+- Beautiful KMUTT-branded login page
+- Session persistence with localStorage
+- Protected routes (requires login)
+- User profile display in navbar
+- Logout functionality
+
+### Demo Credentials
+
+**Admin User:**
+- Username: `admin`
+- Password: `admin123`
+- Role: Administrator (ผู้ดูแลระบบ)
+
+**Teacher User:**
+- Username: `teacher`
+- Password: `teacher123`
+- Role: Teacher (อาจารย์ทดสอบ)
+
+### How It Works
+
+1. **Initial Access**: Users are redirected to `/login` page
+2. **Login**: Enter credentials and click "เข้าสู่ระบบ"
+3. **Authentication**: Session stored in localStorage
+4. **Main App**: Redirected to scheduler with user info in navbar
+5. **Logout**: Click "ออกจากระบบ" to return to login page
+
+### Implementation Details
+
+**Frontend:**
+- `Login.tsx` - Login page component
+- `AuthContext.tsx` - Authentication state management
+- `ProtectedRoute.tsx` - Route wrapper requiring authentication
+- `MainApp.tsx` - Main application layout
+- `useAuth.ts` - Custom authentication hook
+
+**Backend:**
+- `/api/auth/login` - Validates credentials and returns user data
+- `/api/auth/verify` - Verifies authentication token
+- `/api/auth/logout` - Handles logout
+
+**Security Note:** Current implementation uses client-side authentication for demonstration. For production deployment, implement:
+- Password hashing (bcrypt)
+- JWT token authentication
+- Database user storage
+- HTTPS/SSL
+- CSRF protection
+- Rate limiting
+
+📖 **For detailed authentication documentation, see [LOGIN_FEATURE.md](./LOGIN_FEATURE.md)**
 
 ## 🤖 Auto-Assignment Algorithm
 
@@ -448,20 +529,27 @@ The application features a modern, responsive interface with:
 
 ### Main Sections
 
-1. **ข้อมูลพื้นฐาน (Data Management)**
+1. **เข้าสู่ระบบ (Login Page)**
+   - KMUTT-branded login interface
+   - Username and password authentication
+   - Demo credentials display
+   - Remember me option
+   - Session persistence
+
+2. **ข้อมูลพื้นฐาน (Data Management)**
    - Years/Levels management
    - Rooms and buildings
    - Instructors with availability
    - Subjects/Courses with instructors
 
-2. **จัดตารางสอน (Scheduler)**
+3. **จัดตารางสอน (Scheduler)**
    - Weekly calendar grid (7 days × 14 time slots)
    - Drag-and-drop interface
    - Class pool sidebar (unscheduled classes)
    - Auto-assign button
    - Real-time conflict detection
 
-3. **รายงาน (Reports)**
+4. **รายงาน (Reports)**
    - Workload Report: Per-instructor teaching loads
    - Room Report: Weekly room utilization
 

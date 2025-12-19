@@ -72,7 +72,7 @@ export function CalendarGrid({ onDrop }: CalendarGridProps) {
     const subject = getSubject(positioned.session.id);
     if (!subject) return false;
 
-    const subjectYears = Array.isArray(subject.year) ? subject.year : [subject.year];
+    const subjectYears = (Array.isArray(subject.year) ? subject.year : (subject.year ? [subject.year] : [])).filter(Boolean) as string[];
     const subjectInstructorIds = Array.isArray(subject.instructors)
       ? subject.instructors.map((i: any) => i.id)
       : [];
@@ -85,7 +85,7 @@ export function CalendarGrid({ onDrop }: CalendarGridProps) {
         const otherSubject = getSubject(other.session.id);
         if (!otherSubject) continue;
 
-        const otherYears = Array.isArray(otherSubject.year) ? otherSubject.year : [otherSubject.year];
+        const otherYears = (Array.isArray(otherSubject.year) ? otherSubject.year : (otherSubject.year ? [otherSubject.year] : [])).filter(Boolean) as string[];
         const otherInstructorIds = Array.isArray(otherSubject.instructors)
           ? otherSubject.instructors.map((i: any) => i.id)
           : [];

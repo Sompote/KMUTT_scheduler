@@ -111,11 +111,10 @@ export function SubjectForm({ isOpen, onClose, subject, onSave, onDelete }: Subj
         }));
       } else {
         // Creating: redistribute evenly
-        const redistributed = formData.instructorAssignments.map(() => ({ ratio: evenRatio }));
         setFormData((prev) => ({
           ...prev,
           instructorAssignments: [
-            ...prev.instructorAssignments.map((inst, idx) => ({
+            ...prev.instructorAssignments.map((inst) => ({
               ...inst,
               ratio: evenRatio,
             })),

@@ -64,7 +64,6 @@ export function InstructorsList() {
   };
 
   const toggleBusy = (day: string, slot: number) => {
-    const slotKey = `${day}_${slot}`;
     const isBusy = formData.busy.some((b) => b.day === day && b.slot === slot);
 
     if (isBusy) {
